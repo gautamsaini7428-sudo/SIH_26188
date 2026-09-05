@@ -1,0 +1,12 @@
+[
+  {"type": "PASSPORT", "number": "A1234567", "reason": "Reported stolen — Interpol Red Notice 2024-1188"},
+  {"type": "PASSPORT", "number": "K9876543", "reason": "Fraudulent issuance — forged supporting documents"},
+  {"type": "NATIONAL_ID", "number": "AADHAAR-9988-7766-5544", "reason": "Identity theft — multiple duplicate registrations"},
+  {"type": "NATIONAL_ID", "number": "NID-20241234567", "reason": "Flagged by NIA — suspected terror financing linkage"},
+  {"type": "DRIVING_LICENSE", "number": "DL-0420221234567", "reason": "Suspended — repeated impersonation attempts at border"},
+  {"type": "DRIVING_LICENSE", "number": "MH-1420190078543", "reason": "Revoked — document alteration detected previously"},
+  {"type": "VISA", "number": "V-2024-IND-88901", "reason": "Overstay blacklist — absconded from reporting obligations"},
+  {"type": "VISA", "number": "V-2023-PAK-55432", "reason": "Visa fraud — forged invitation letter"},
+  {"type": "PERMIT", "number": "PRM-BRD-2024-0055", "reason": "Counterfeit permit — serial number not in issuing authority ledger"},
+  {"type": "PERMIT", "number": "PRM-ILP-2024-1234", "reason": "Expired and not renewed — holder attempted re-entry"}
+]

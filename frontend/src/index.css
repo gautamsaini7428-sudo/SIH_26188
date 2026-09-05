@@ -1,0 +1,121 @@
+@import "tailwindcss";
+
+@layer base {
+  :root {
+    --font-sans: 'DM Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    --radius: 0.75rem;
+
+    /* Light Mode Design Tokens */
+    --background: #F8F5F3;
+    --foreground: #27212B;
+    --card: #FFFFFF;
+    --card-foreground: #27212B;
+    --popover: #FFFFFF;
+    --popover-foreground: #27212B;
+    --primary: #0B2925;
+    --primary-foreground: #F8F5F3;
+    --secondary: #EBE5E2;
+    --secondary-foreground: #27212B;
+    --muted: #E2DBD8;
+    --muted-foreground: #755B73;
+    --accent: #A7F3D0;
+    --accent-foreground: #0B2925;
+    --destructive: #DC2626;
+    --destructive-foreground: #FFFFFF;
+    --border: #E5DDD8;
+    --input: #E5DDD8;
+    --ring: #A7F3D0;
+    --sidebar: #0B2925;
+    --sidebar-foreground: #F8F5F3;
+    --sidebar-accent: #133D37;
+  }
+
+  .dark {
+    /* Dark Mode Design Tokens */
+    --background: #061A17;
+    --foreground: #F8F5F3;
+    --card: #0B2925;
+    --card-foreground: #F8F5F3;
+    --popover: #0B2925;
+    --popover-foreground: #F8F5F3;
+    --primary: #A7F3D0;
+    --primary-foreground: #0B2925;
+    --secondary: #133D37;
+    --secondary-foreground: #A7F3D0;
+    --muted: #10342F;
+    --muted-foreground: #A7F3D0;
+    --accent: #174A43;
+    --accent-foreground: #A7F3D0;
+    --destructive: #EF4444;
+    --destructive-foreground: #FFFFFF;
+    --border: rgba(167, 243, 208, 0.2);
+    --input: rgba(167, 243, 208, 0.2);
+    --ring: #A7F3D0;
+    --sidebar: #061A17;
+    --sidebar-foreground: #F8F5F3;
+    --sidebar-accent: #10342F;
+  }
+
+  * {
+    border-color: var(--border);
+  }
+
+  body {
+    background-color: var(--background);
+    color: var(--foreground);
+    font-family: var(--font-sans);
+    min-height: 100vh;
+    margin: 0;
+    padding: 0;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    transition: background-color 0.25s ease, color 0.25s ease;
+  }
+
+  h1, h2, h3, h4, .font-editorial {
+    font-family: 'DM Sans', Georgia, 'Times New Roman', serif;
+    font-weight: 700;
+  }
+}
+
+/* Rubber Stamp Physical Landing & Bleed Effects */
+@keyframes stampImpact {
+  0% {
+    opacity: 0;
+    transform: scale(2.2) rotate(-14deg);
+    filter: blur(4px);
+  }
+  60% {
+    opacity: 0.95;
+    transform: scale(0.96) rotate(-5deg);
+    filter: blur(0px);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1) rotate(-6deg);
+    filter: blur(0px);
+  }
+}
+
+.animate-stamp-impact {
+  animation: stampImpact 0.45s cubic-bezier(0.2, 0.9, 0.3, 1.1) forwards;
+}
+
+/* Clean Custom Scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--background);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--muted);
+  border-radius: 6px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--muted-foreground);
+}

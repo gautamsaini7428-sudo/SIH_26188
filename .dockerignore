@@ -1,0 +1,11 @@
+.venv/
+__pycache__/
+*.pyc
+node_modules/
+.git/
+.vscode/
+tests/
+test_images/
+test_samples/
+dist/
+cloudflared.exe
