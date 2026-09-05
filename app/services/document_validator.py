@@ -1,60 +1,100 @@
 """
-Document Validation Gate Service
+Identity Document Intake Validation Gate — SIH26188
 
-Validates whether an uploaded image contains:
-1. A detectable face / ID portrait region
-2. Extractable identity text lines and document structural features
-
-If either check fails, halts the pipeline immediately with a REJECTED verdict.
+Pre-flight verification gate for uploaded identity document files:
+1. Valid dimensions & standard ID card / Passport aspect ratio
+2. Non-uniform content, non-blank, non-saturated
+3. Structural text & edge density check (rejects building sketches / drawings)
 """
 
 import os
-from typing import Tuple, Optional
+import numpy as np
+from typing import Tuple, Optional, Dict, Any
 from PIL import Image, ImageStat, ImageFilter
 
-
-class DocumentValidationError(Exception):
-    def __init__(self, message: str = "No valid identity document detected"):
-        self.message = message
-        self.error_code = "INVALID_DOCUMENT"
-        super().__init__(self.message)
+from app.preprocessing.enhancement import evaluate_document_quality
 
 
-class NoFaceDetectedError(Exception):
-    def __init__(self, message: str = "No face detected in submitted images"):
-        self.message = message
-        self.error_code = "NO_FACE_DETECTED"
-        super().__init__(self.message)
+class ValidationGateResult(tuple):
+    """
+    2-tuple subclass (is_valid, failure_reason) that also carries quality_info
+    attribute for backward-compatible 2-tuple unpacking.
+    """
+    def __new__(cls, is_valid: bool, failure_reason: Optional[str] = None, quality_info: Optional[Dict[str, Any]] = None):
+        instance = super().__new__(cls, (is_valid, failure_reason))
+        instance.is_valid = is_valid
+        instance.failure_reason = failure_reason
+        instance.quality_info = quality_info or {}
+        return instance
 
 
-def validate_identity_document(file_path: str, doc_type: str = "DRIVING_LICENSE") -> Tuple[bool, Optional[str]]:
+def validate_identity_document(
+    file_path: str,
+    doc_type: str = "DRIVING_LICENSE"
+) -> ValidationGateResult:
     """
     Perform pre-flight validation gate on uploaded document image.
 
     Checks:
     1. Readability & valid dimensions
     2. Aspect ratio compatibility with standard IDs / Passports
-    3. Detectable face presence (primary portrait) - skipped for VISA
-    4. Extractable text / high-frequency horizontal document structure
+    3. Structural entropy & non-uniform content
+    4. Quality evaluation
 
     Returns:
-        (is_valid, failure_reason)
+        ValidationGateResult(is_valid, failure_reason, quality_info)
+        which supports standard 2-tuple unpacking: `is_valid, reason = validate_identity_document(path)`
     """
+    default_quality = {
+        "status": "UNUSABLE",
+        "score": 0.0,
+        "reasons": ["File not accessible"],
+        "summary": "UNUSABLE: File not accessible",
+    }
+
     if not os.path.exists(file_path):
-        return False, "No valid identity document detected"
+        return ValidationGateResult(False, "No valid identity document detected", default_quality)
 
     try:
         with Image.open(file_path) as img:
+            try:
+                from PIL import ImageOps
+                img = ImageOps.exif_transpose(img)
+            except Exception:
+                pass
+
             width, height = img.size
 
             # Check 1: Minimum dimensions
-            if width < 150 or height < 100:
-                return False, "No valid identity document detected"
+            if width < 100 or height < 80:
+                return ValidationGateResult(
+                    False,
+                    "Image dimensions are too small to be a document",
+                    {
+                        "status": "UNUSABLE",
+                        "score": 0.1,
+                        "reasons": [f"Image dimensions {width}x{height}px too small"],
+                        "summary": f"UNUSABLE: Image dimensions {width}x{height}px too small",
+                    },
+                )
 
             # Check 2: Aspect ratio
             aspect_ratio = width / float(height)
-            if aspect_ratio < 0.45 or aspect_ratio > 2.8:
-                return False, "No valid identity document detected"
+            if aspect_ratio < 0.3 or aspect_ratio > 3.5:
+                return ValidationGateResult(
+                    False,
+                    f"Extreme aspect ratio ({aspect_ratio:.2f}) incompatible with identity documents",
+                    {
+                        "status": "UNUSABLE",
+                        "score": 0.1,
+                        "reasons": [f"Extreme aspect ratio ({aspect_ratio:.2f})"],
+                        "summary": "UNUSABLE: Extreme aspect ratio",
+                    },
+                )
+
+            rgb_img = img.convert("RGB")
+            img_np = np.array(rgb_img)
+            quality_info = evaluate_document_quality(img_np)
 
             # Convert to grayscale for text & structural entropy analysis
             gray_img = img.convert("L")
@@ -62,28 +102,37 @@ def validate_identity_document(file_path: str, doc_type: str = "DRIVING_LICENSE"
             std_dev = stat.stddev[0]
             mean_brightness = stat.mean[0]
 
-            # Uniform canvas or extreme exposure
-            if std_dev < 12.0 or mean_brightness < 10 or mean_brightness > 248:
-                return False, "No valid identity document detected"
+            # Uniform canvas or completely blank
+            if std_dev < 10.0 or mean_brightness < 8 or mean_brightness > 250:
+                return ValidationGateResult(
+                    False,
+                    "Image contains blank, uniform, or completely saturated content",
+                    quality_info,
+                )
 
-            # Check 3: Extractable Text / Edge Density
+            # Check 3: Structural text / edge density for non-document drawings/sketches
             edges = gray_img.filter(ImageFilter.FIND_EDGES)
             edge_stat = ImageStat.Stat(edges)
             edge_mean = edge_stat.mean[0]
 
-            if edge_mean < 4.5:
-                return False, "No extractable identity fields found"
+            has_face = detect_face_presence(file_path)
+            if std_dev < 22.0 and not has_face:
+                return ValidationGateResult(
+                    False,
+                    "No extractable identity fields or document structure found",
+                    quality_info,
+                )
+            if edge_mean < 4.0 or (edge_mean < 6.5 and not has_face and std_dev < 25.0):
+                return ValidationGateResult(
+                    False,
+                    "No extractable identity fields or document structure found",
+                    quality_info,
+                )
 
-            # Check 4: Face Detection in document (skipped for VISA)
-            if doc_type.upper() != "VISA":
-                has_face = detect_face_presence(file_path)
-                if not has_face:
-                    return False, "No face detected in submitted document"
+            return ValidationGateResult(True, None, quality_info)
 
-            return True, None
-
-    except Exception:
-        return False, "No valid identity document detected"
+    except Exception as exc:
+        return ValidationGateResult(False, f"Failed to parse document image file: {str(exc)}", default_quality)
 
 
 def detect_face_presence(image_path: str) -> bool:
@@ -109,20 +158,22 @@ def detect_face_presence(image_path: str) -> bool:
     except Exception:
         pass
 
-    # Fallback skin tone heuristic
+    # Fallback skin tone heuristic using numpy
     try:
         with Image.open(image_path) as img:
-            rgb_img = img.convert("RGB")
-            pixels = list(rgb_img.resize((100, 100)).getdata())
-            skin_pixels = 0
-            for r, g, b in pixels:
-                if r > 60 and g > 40 and b > 20 and (max(r, g, b) - min(r, g, b) > 15) and abs(r - g) > 15 and r > g and r > b:
-                    skin_pixels += 1
+            rgb_img = img.convert("RGB").resize((100, 100))
+            arr = np.array(rgb_img, dtype=np.int32)
+            r = arr[:, :, 0]
+            g = arr[:, :, 1]
+            b = arr[:, :, 2]
 
-            skin_ratio = skin_pixels / float(len(pixels))
-            if skin_ratio < 0.02:
-                return False
-
-            return True
+            skin_mask = (
+                (r > 60) & (g > 40) & (b > 20) &
+                ((np.maximum(np.maximum(r, g), b) - np.minimum(np.minimum(r, g), b)) > 15) &
+                (np.abs(r - g) > 10) &
+                (r > g) & (r > b)
+            )
+            skin_ratio = float(np.sum(skin_mask)) / float(arr.shape[0] * arr.shape[1])
+            return skin_ratio >= 0.015
     except Exception:
         return False

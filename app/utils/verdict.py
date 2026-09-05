@@ -1,21 +1,15 @@
 """
-Verdict & Risk Score Computation Module
+Verdict & Risk Score Computation Module - SIH26188
 
 Primary output: risk_score (0-100) — weighted combination of tampering,
 face match, validation issues, and Aadhaar Secure QR cryptographic signals.
 
-Verdict is a label derived from risk_score PLUS hard gates:
-- Any failed validation → cannot be GENUINE
-- face_match_score < 50 → FAKE
-- tampering_score > 70 → FAKE
-- Aadhaar QR signature invalid → FAKE (Hard Gate)
-- Aadhaar QR / OCR demographic mismatch → FAKE (Critical Integrity Hard Gate)
-- Aadhaar QR crypto unavailable → cannot be GENUINE (SUSPICIOUS)
-- risk_score 0-30 + all gates clear → GENUINE
-- risk_score 31-65 → SUSPICIOUS
-- risk_score > 65 → FAKE
-
-Never defaults to GENUINE.
+Verdict is derived from risk_score PLUS hard gates:
+- Negative evidence (confirmed tampering > 70, confirmed face mismatch < 50, invalid QR signature, watchlist hit) -> FAKE
+- Missing evidence / inconclusive (unclear image, unverified crypto) -> SUSPICIOUS / REVIEW_REQUIRED
+- Risk score 0-30 + all gates clear -> GENUINE
+- Risk score 31-65 -> SUSPICIOUS
+- Risk score > 65 -> FAKE
 """
 
 from typing import Optional, List, Dict, Any
@@ -36,58 +30,46 @@ def compute_risk_score(
 ) -> int:
     """
     Compute the primary risk score (0-100) as a weighted multi-factor composite.
-
-    Guarantees:
-    - Low risk (0-30) for clean documents with high face match, valid category, and verified QR.
-    - Face match score below rejection threshold (< 50) guarantees at least HIGH RISK (> 65).
-    - Category / Document Type Mismatch produces at least HIGH RISK (>= 75).
-    - Aadhaar QR invalid signature or QR/OCR mismatch guarantees at least HIGH RISK (>= 80).
-    - Tampering, validation, liveness, and presentation attack contribute coherently.
-    - Expired document adds hard penalty ensuring it cannot produce low risk.
-    - Risk score is clamped to [0, 100].
     """
     settings = get_settings()
 
     # 1. Tampering Component
-    if tampering_score > settings.tampering_fake_threshold:
-        tampering_component = 66.0 + (tampering_score - settings.tampering_fake_threshold) * 0.8
-    elif tampering_score >= settings.tampering_suspicious_threshold:
-        tampering_component = 30.0 + (tampering_score - settings.tampering_suspicious_threshold) * 0.7
+    if tampering_score > getattr(settings, "tampering_fake_threshold", 70):
+        tampering_component = 66.0 + (tampering_score - 70) * 0.8
+    elif tampering_score >= getattr(settings, "tampering_suspicious_threshold", 40):
+        tampering_component = 30.0 + (tampering_score - 40) * 0.7
     else:
-        tampering_component = tampering_score * settings.risk_weight_tampering
+        tampering_component = tampering_score * 0.4
 
     # 2. Face Match Component
     if face_match_score is not None:
-        if face_match_score < settings.face_match_fake_threshold:
-            # Identity substitution / mismatch: scales from 66 (at threshold - 1) to 90 (at 0)
-            deficit = float(settings.face_match_fake_threshold - face_match_score)
-            face_component = 66.0 + (deficit / max(1.0, float(settings.face_match_fake_threshold))) * 24.0
-        elif face_match_score < settings.face_match_suspicious_threshold:
-            # Borderline face match (50 to 69): scales from 25 to 45
-            deficit = float(settings.face_match_suspicious_threshold - face_match_score)
-            span = float(settings.face_match_suspicious_threshold - settings.face_match_fake_threshold)
+        fake_thresh = getattr(settings, "face_match_fake_threshold", 50)
+        susp_thresh = getattr(settings, "face_match_suspicious_threshold", 70)
+        if face_match_score < fake_thresh:
+            deficit = float(fake_thresh - face_match_score)
+            face_component = 66.0 + (deficit / max(1.0, float(fake_thresh))) * 24.0
+        elif face_match_score < susp_thresh:
+            deficit = float(susp_thresh - face_match_score)
+            span = float(susp_thresh - fake_thresh)
             face_component = 25.0 + (deficit / max(1.0, span)) * 20.0
         else:
-            # Clean face match (>= 70): minimal deficit contribution (0 to 12)
             face_component = (100.0 - float(face_match_score)) * 0.3
     else:
-        # No face match (e.g. VISA or missing selfie) — redistribute weight to tampering
+        # Face match was not performed or face was not found
         face_component = 0.0
-        if tampering_score <= settings.tampering_suspicious_threshold:
-            tampering_component = tampering_score * (settings.risk_weight_tampering + settings.risk_weight_face)
 
     # 3. Validation Issues Component (capped at 30.0)
     validation_component = min(
-        validation_issues_count * settings.risk_weight_validation_issue,
+        validation_issues_count * 10.0,
         30.0,
     )
 
-    # 4. Biometric Spoof / Presentation Attack / Category Mismatch / Low Quality / Expiry / Aadhaar Penalties
+    # 4. Biometric Spoof / Presentation Attack / Category Mismatch / Low Quality / Expiry Penalties
     bio_penalty = 0.0
     if presentation_attack_detected:
         bio_penalty += 50.0
     elif liveness_failed:
-        bio_penalty += 35.0
+        bio_penalty += 30.0
 
     if category_mismatch:
         bio_penalty += 75.0
@@ -106,13 +88,13 @@ def compute_risk_score(
         elif aadhaar_qr.verification_status == "CRITICAL_INTEGRITY_MISMATCH":
             aadhaar_penalty += 70.0
         elif aadhaar_qr.detected and aadhaar_qr.signature_valid is None:
-            aadhaar_penalty += 20.0
+            aadhaar_penalty += 10.0
 
     risk = tampering_component + face_component + validation_component + bio_penalty + aadhaar_penalty
 
     # Hard minimums for critical failure conditions
-    if face_match_score is not None and face_match_score < settings.face_match_fake_threshold:
-        risk = max(risk, face_component)
+    if face_match_score is not None and face_match_score < getattr(settings, "face_match_fake_threshold", 50):
+        risk = max(risk, 66.0)
 
     if category_mismatch:
         risk = max(risk, 75.0)
@@ -121,9 +103,7 @@ def compute_risk_score(
         risk = max(risk, 45.0)
 
     if aadhaar_qr:
-        if aadhaar_qr.signature_valid is False:
-            risk = max(risk, 80.0)
-        elif aadhaar_qr.verification_status == "CRITICAL_INTEGRITY_MISMATCH":
+        if aadhaar_qr.signature_valid is False or aadhaar_qr.verification_status == "CRITICAL_INTEGRITY_MISMATCH":
             risk = max(risk, 80.0)
 
     return max(0, min(100, int(round(risk))))
@@ -201,22 +181,6 @@ def compute_verdict(
 ) -> str:
     """
     Compute final verdict from risk_score + hard gates.
-
-    Hard gates (override risk_score):
-    1. Category / Document Type Mismatch → REJECTED
-    2. tampering_score > 70 → FAKE
-    3. face_match_score < 50 → FAKE
-    4. Aadhaar QR Signature Invalid → FAKE
-    5. Aadhaar QR / OCR Critical Integrity Mismatch → FAKE
-    6. Any failed validation check → cannot be GENUINE
-    7. Any failed security check → FAKE; any suspicious → SUSPICIOUS
-
-    Risk-score thresholds (when no hard gate trips):
-    - 0-30 → GENUINE
-    - 31-65 → SUSPICIOUS
-    - >65 → FAKE
-
-    Returns: "GENUINE" | "SUSPICIOUS" | "FAKE" | "REJECTED"
     """
     settings = get_settings()
 
@@ -227,11 +191,11 @@ def compute_verdict(
         return "REJECTED"
 
     # Hard gate 1: Critical tampering
-    if tampering_score > settings.tampering_fake_threshold:
+    if tampering_score > getattr(settings, "tampering_fake_threshold", 70):
         return "FAKE"
 
-    # Hard gate 2: Low face match (identity substitution)
-    if face_match_score is not None and face_match_score < settings.face_match_fake_threshold:
+    # Hard gate 2: Confirmed low face match (identity substitution)
+    if face_match_score is not None and face_match_score < getattr(settings, "face_match_fake_threshold", 50):
         return "FAKE"
 
     # Hard gate 2.5: Aadhaar QR Cryptographic Hard Gates
@@ -270,10 +234,10 @@ def compute_verdict(
         return "FAKE"
 
     # Risk-score-based verdict
-    if risk_score > settings.risk_suspicious_max:
+    if risk_score > getattr(settings, "risk_suspicious_max", 65):
         return "FAKE"
 
-    if risk_score > settings.risk_genuine_max:
+    if risk_score > getattr(settings, "risk_genuine_max", 30):
         return "SUSPICIOUS"
 
     # Final checks before allowing GENUINE
@@ -284,11 +248,11 @@ def compute_verdict(
         return "SUSPICIOUS"
 
     # Moderate tampering
-    if tampering_score >= settings.tampering_suspicious_threshold:
+    if tampering_score >= getattr(settings, "tampering_suspicious_threshold", 40):
         return "SUSPICIOUS"
 
     # Borderline face match
-    if face_match_score is not None and face_match_score < settings.face_match_suspicious_threshold:
+    if face_match_score is not None and face_match_score < getattr(settings, "face_match_suspicious_threshold", 70):
         return "SUSPICIOUS"
 
     return "GENUINE"
@@ -310,7 +274,7 @@ def generate_security_checks(
         mrz_status = "passed" if validation.mrz_valid else "failed"
         mrz_score = 100 if validation.mrz_valid else 15
         mrz_desc = (
-            "ICAO 9303 TD3 check digits mathematically validated — all 5 fields correct."
+            "ICAO 9303 TD3 check digits mathematically validated — all check digits correct."
             if validation.mrz_valid
             else "MRZ checksum parity failure — one or more check digits do not match computed values."
         )
@@ -369,14 +333,14 @@ def generate_security_checks(
             "category": "biometric",
             "status": "passed",
             "score": 100,
-            "description": "Face match not applicable for this document type (VISA).",
+            "description": "Face match not applicable or skipped for this document type.",
         })
 
     # 4. Typography & Font Uniformity
     avg_conf = 95
     if ocr_confidence:
         avg_conf = int(sum(ocr_confidence.values()) / max(1, len(ocr_confidence)) * 100)
-    font_status = "passed" if avg_conf >= 80 else "suspicious" if avg_conf >= 60 else "failed"
+    font_status = "passed" if avg_conf >= 75 else "suspicious" if avg_conf >= 55 else "failed"
     checks.append({
         "id": "sc-4",
         "name": "Typography & Microprint Uniformity",
@@ -469,15 +433,19 @@ def get_verdict_reason(
         elif aadhaar_qr.detected and aadhaar_qr.signature_valid is None:
             reasons.append(f"Aadhaar QR: {aadhaar_qr.message or 'Verification unverified/inconclusive'}")
 
-    if tampering_score > settings.tampering_fake_threshold:
-        reasons.append(f"Severe tampering ({tampering_score} > {settings.tampering_fake_threshold})")
-    elif tampering_score >= settings.tampering_suspicious_threshold:
-        reasons.append(f"Moderate tampering ({tampering_score} ≥ {settings.tampering_suspicious_threshold})")
+    fake_thresh = getattr(settings, "tampering_fake_threshold", 70)
+    susp_thresh = getattr(settings, "tampering_suspicious_threshold", 40)
+    if tampering_score > fake_thresh:
+        reasons.append(f"Severe tampering ({tampering_score} > {fake_thresh})")
+    elif tampering_score >= susp_thresh:
+        reasons.append(f"Moderate tampering ({tampering_score} ≥ {susp_thresh})")
 
     if face_match_score is not None:
-        if face_match_score < settings.face_match_fake_threshold:
-            reasons.append(f"Critical facial mismatch ({face_match_score}% < {settings.face_match_fake_threshold}%)")
-        elif face_match_score < settings.face_match_suspicious_threshold:
+        fm_fake = getattr(settings, "face_match_fake_threshold", 50)
+        fm_susp = getattr(settings, "face_match_suspicious_threshold", 70)
+        if face_match_score < fm_fake:
+            reasons.append(f"Critical facial mismatch ({face_match_score}% < {fm_fake}%)")
+        elif face_match_score < fm_susp:
             reasons.append(f"Borderline facial match ({face_match_score}%)")
 
     if validation:

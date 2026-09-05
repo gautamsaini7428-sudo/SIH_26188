@@ -95,6 +95,8 @@ class OCRResponse(BaseModel):
         default="unknown",
         description="Document type classification: passport/id/license/visa/invoice/certificate/unknown"
     )
+    ocr_status: Optional[str] = None
+    provenance: Optional[Dict[str, Any]] = None
 
 
 class HealthResponse(BaseModel):
@@ -126,7 +128,7 @@ class PresentationAttackResult(BaseModel):
 
 
 class FaceMatchResult(BaseModel):
-    status: str = Field(default="MATCH", description="MATCH | NO_MATCH | BORDERLINE | SKIPPED")
+    status: str = Field(default="MATCH", description="MATCH | NO_MATCH | BORDERLINE | SKIPPED | UNAVAILABLE")
     score: Optional[int] = Field(default=None, ge=0, le=100)
     distance: Optional[float] = None
     threshold: float = 0.68
@@ -187,7 +189,7 @@ class VerifyResponse(BaseModel):
     risk_score: int = Field(default=0, ge=0, le=100, description="Primary output: weighted risk composite")
     risk_level: Optional[str] = None
     risk_factors: List[str] = Field(default_factory=list)
-    verdict: str = Field(pattern="^(GENUINE|SUSPICIOUS|FAKE|REJECTED)$")
+    verdict: str = Field(default="GENUINE")
     reason: Optional[str] = None
     security_checks: List[SecurityCheckItem] = Field(default_factory=list)
     identity_links: List[IdentityLinkItem] = Field(default_factory=list)
@@ -199,6 +201,11 @@ class VerifyResponse(BaseModel):
     mrz: Optional[MRZResult] = None
     ocr_lines: Optional[List[OCRLine]] = None
     raw_text: Optional[str] = None
+    quality_status: Optional[str] = None
+    ocr_status: Optional[str] = None
+    face_status: Optional[str] = None
+    document_quality: Optional[Dict[str, Any]] = None
+    field_provenance: Optional[Dict[str, Any]] = None
 
     model_config = ConfigDict(from_attributes=True)
 

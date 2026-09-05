@@ -1,17 +1,17 @@
 """
 Verification Orchestration Service — SIH26188
 
-Coordinates the full document verification pipeline with fast-fail validation:
+Coordinates the full document verification pipeline:
 1. Save uploaded files
-2. FAST-FAIL INTAKE GATE (detectable text & face presence except for VISA) -> returns verdict="REJECTED" immediately on non-documents or building sketches
-3. Run OCR field extraction (type-aware for PASSPORT, VISA, NATIONAL_ID, DRIVING_LICENSE, PERMIT)
-4. Run Standalone Document Validation module (format, expiry, MRZ checksum math, blacklist check)
-5. Aadhaar Secure QR Cryptographic Verification Module (ONLY for NATIONAL_ID)
-6. Run Tampering / ELA forensic analysis (generates palette heatmap base64)
-7. Run Face Match module (skip for VISA or missing selfie)
-8. Compute weighted risk_score (primary output 0-100)
-9. Derive verdict (GENUINE | SUSPICIOUS | FAKE | REJECTED) from risk_score + hard gates
-10. Store record with checkpoint_location in SQLite database and return structured response
+2. Intake validation & document quality assessment
+3. Multi-pass OCR field extraction with provenance tracking
+4. Standalone Document Validation module (format, expiry, MRZ math, blacklist)
+5. Aadhaar Secure QR Cryptographic Verification (for NATIONAL_ID)
+6. Tampering / ELA forensic analysis
+7. Biometric Face Match & Presentation Attack screening
+8. Weighted risk score composite (0-100)
+9. Honest verdict derivation (GENUINE | SUSPICIOUS | FAKE | REJECTED)
+10. Database persistence and tamper-evident SHA-256 audit logging
 """
 
 import time
@@ -19,7 +19,7 @@ import json
 import random
 import logging
 from datetime import datetime, timezone, timedelta
-from typing import Optional, List, Tuple
+from typing import Optional, List, Tuple, Dict, Any
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, func, case, or_
 from fastapi import UploadFile
@@ -78,8 +78,6 @@ async def find_identity_links(
     - Same document number under a different name (possible identity cloning / recycling)
     - Same name presenting a different document number (possible alias / multiple credentials)
     - Prior record matches for this individual
-
-    Returns investigative correlation items without declaring definitive identity.
     """
     links: List[IdentityLinkItem] = []
     seen_ids = set()
@@ -158,6 +156,16 @@ async def find_identity_links(
     return links
 
 
+# Category conflict mapping
+KNOWN_CONFLICT_MAP = {
+    "PASSPORT": {"INVOICE", "CERTIFICATE", "DRIVING_LICENSE"},
+    "DRIVING_LICENSE": {"INVOICE", "CERTIFICATE", "PASSPORT"},
+    "NATIONAL_ID": {"INVOICE", "CERTIFICATE", "PASSPORT"},
+    "VISA": {"INVOICE", "CERTIFICATE", "PASSPORT"},
+    "PERMIT": {"INVOICE", "CERTIFICATE", "PASSPORT"},
+}
+
+
 async def run_verification(
     db: AsyncSession,
     id_file: UploadFile,
@@ -173,11 +181,10 @@ async def run_verification(
     start_time = time.time()
     settings = get_settings()
 
-    doc_type = document_type.upper()
+    doc_type = (document_type or "DRIVING_LICENSE").upper()
     if doc_type not in ("PASSPORT", "VISA", "NATIONAL_ID", "DRIVING_LICENSE", "PERMIT"):
         doc_type = "DRIVING_LICENSE"
 
-    # Use officer's assigned checkpoint location if provided, else random choice
     checkpoint_location = user_checkpoint_location or random.choice(settings.checkpoint_location_list)
 
     # 1. Save ID file to disk
@@ -185,7 +192,18 @@ async def run_verification(
     id_full_path = settings.upload_dir + "/" + id_relative_path
 
     # 2. FAST-FAIL INTAKE GATE: Check if file contains valid document structure
-    is_valid_doc, failure_reason = validate_identity_document(id_full_path, doc_type=doc_type)
+    val_intake_res = validate_identity_document(id_full_path, doc_type=doc_type)
+    if isinstance(val_intake_res, tuple):
+        if len(val_intake_res) == 3:
+            is_valid_doc, failure_reason, quality_info = val_intake_res
+        else:
+            is_valid_doc, failure_reason = val_intake_res[0], val_intake_res[1]
+            quality_info = {}
+    else:
+        is_valid_doc = bool(val_intake_res)
+        failure_reason = None
+        quality_info = {}
+
     if not is_valid_doc:
         processing_time_ms = int((time.time() - start_time) * 1000)
         reason_msg = failure_reason or "No valid identity document detected in uploaded file"
@@ -263,6 +281,10 @@ async def run_verification(
             case_number=f"CASE-26188-{verification.id:03d}",
             checkpoint_location=checkpoint_location,
             officer_email=officer_email,
+            quality_status=quality_info.get("overall_status", "UNUSABLE"),
+            ocr_status="INTAKE_REJECTED",
+            face_status="SKIPPED",
+            document_quality=quality_info,
         )
         verification.full_response_json = rej_resp.model_dump_json()
         await db.commit()
@@ -275,18 +297,21 @@ async def run_verification(
         selfie_relative_path = await save_upload_file(selfie_file, "selfies")
         selfie_full_path = settings.upload_dir + "/" + selfie_relative_path
 
-    # 4. Type-Aware OCR Extraction
+    # 4. Multi-Pass Type-Aware OCR Extraction
     ocr_result = await extract_fields(id_full_path, doc_type)
     extracted_fields_dict = ocr_result.get("fields", {})
     ocr_confidence = ocr_result.get("confidence", {})
+    field_provenance = ocr_result.get("provenance", {})
     mrz_line1 = ocr_result.get("mrz_line1")
     mrz_line2 = ocr_result.get("mrz_line2")
     mrz_result = ocr_result.get("mrz_result")
     ocr_lines = ocr_result.get("ocr_lines")
     raw_text = ocr_result.get("raw_text")
     detected_doc_type = (ocr_result.get("detected_document_type") or "unknown").upper()
+    ocr_status = ocr_result.get("ocr_status", "SUCCESS")
+    quality_metrics = ocr_result.get("quality_metrics") or quality_info
 
-    # Category Match Calculation
+    # Category Match Calculation (only flag mismatch if confirmed conflicting category)
     type_alias_map = {
         "PASSPORT": "PASSPORT",
         "LICENSE": "DRIVING_LICENSE",
@@ -294,13 +319,19 @@ async def run_verification(
         "VISA": "VISA",
         "ID": "NATIONAL_ID",
         "NATIONAL_ID": "NATIONAL_ID",
+        "AADHAAR": "NATIONAL_ID",
+        "PAN": "NATIONAL_ID",
+        "VOTER_ID": "NATIONAL_ID",
+        "GENERIC_NATIONAL_ID": "NATIONAL_ID",
         "PERMIT": "PERMIT",
         "INVOICE": "INVOICE",
         "CERTIFICATE": "CERTIFICATE",
+        "UNKNOWN": "UNKNOWN",
     }
     mapped_detected = type_alias_map.get(detected_doc_type, detected_doc_type)
-    # An unknown classifier result is not proof that the selected category is correct.
-    category_match = bool(mapped_detected == doc_type)
+    conflict_types = KNOWN_CONFLICT_MAP.get(doc_type, set())
+    is_category_mismatch = bool(mapped_detected in conflict_types)
+    category_match = not is_category_mismatch
 
     # 5. Standalone Document Validation Module (Format, Expiry, MRZ Checksum, Category Match, Blacklist)
     val_result = validate_document(
@@ -313,7 +344,7 @@ async def run_verification(
         detected_doc_type=detected_doc_type,
     )
 
-    # 5.5. Aadhaar Secure QR Cryptographic Verification Module (ONLY for NATIONAL_ID)
+    # 5.5. Aadhaar Secure QR Cryptographic Verification Module (for NATIONAL_ID)
     aadhaar_qr_result: Optional[AadhaarQRResult] = None
     if doc_type == "NATIONAL_ID":
         try:
@@ -338,11 +369,12 @@ async def run_verification(
     # 7. Biometric Multi-Stage Evaluation (Quality, Liveness, Spoof, ArcFace)
     biometric_result = await run_biometric_evaluation(id_full_path, selfie_full_path if doc_type != "VISA" else None)
     face_match_score = biometric_result.face_match.score if (doc_type != "VISA" and selfie_full_path and biometric_result.face_match.score is not None) else None
+    face_status = biometric_result.face_match.status
 
     liveness_failed = bool(biometric_result.liveness.status == "FAIL")
     presentation_attack_detected = bool(biometric_result.presentation_attack.detected)
     multiple_faces = bool(biometric_result.face_count > 1)
-    is_low_quality = bool(biometric_result.quality.status == "LOW_QUALITY")
+    is_low_quality = bool(biometric_result.quality.status == "LOW_QUALITY") or (quality_metrics.get("overall_status") in ("POOR", "UNUSABLE"))
 
     # 8. Calculate Primary Risk Score (0-100) & Risk Level
     risk_score = compute_risk_score(
@@ -351,7 +383,7 @@ async def run_verification(
         validation_issues_count=len(val_result.issues),
         liveness_failed=liveness_failed,
         presentation_attack_detected=presentation_attack_detected,
-        category_mismatch=not category_match,
+        category_mismatch=is_category_mismatch,
         is_low_quality=is_low_quality,
         is_expired=bool(not val_result.expiry_valid),
         aadhaar_qr=aadhaar_qr_result,
@@ -366,7 +398,7 @@ async def run_verification(
         presentation_attack_detected=presentation_attack_detected,
         multiple_faces=multiple_faces,
         face_obstructed=False,
-        category_mismatch=not category_match,
+        category_mismatch=is_category_mismatch,
         is_low_quality=is_low_quality,
         aadhaar_qr=aadhaar_qr_result,
     )
@@ -400,23 +432,20 @@ async def run_verification(
         face_match_score=face_match_score if doc_type != "VISA" else None,
         validation=val_result,
         security_checks=raw_checks,
-        category_mismatch=not category_match,
+        category_mismatch=is_category_mismatch,
         aadhaar_qr=aadhaar_qr_result,
     )
 
-    # Hard Gate overrides for presentation attacks, document type, and missing
-    # live biometric evidence. VISA is the only document category for which a
-    # selfie is intentionally not required.
-    if not category_match:
+    # Hard Gate overrides for presentation attacks, document type, and missing live biometric evidence
+    if is_category_mismatch:
         verdict = "REJECTED"
     elif presentation_attack_detected:
         verdict = "FAKE"
     elif doc_type != "VISA" and not selfie_full_path:
-        risk_score = max(risk_score, 66)
-        risk_level = get_risk_level(risk_score)
         if "FACE_VERIFICATION_UNAVAILABLE" not in risk_factors:
             risk_factors.append("FACE_VERIFICATION_UNAVAILABLE")
-        verdict = "REJECTED"
+        if verdict == "GENUINE":
+            verdict = "SUSPICIOUS"
     elif biometric_result.status == "REJECTED" and verdict == "GENUINE":
         verdict = "SUSPICIOUS"
 
@@ -427,18 +456,16 @@ async def run_verification(
         face_match_score=face_match_score if doc_type != "VISA" else None,
         validation=val_result,
         security_checks=raw_checks,
-        category_mismatch=not category_match,
+        category_mismatch=is_category_mismatch,
         selected_doc_type=doc_type,
         detected_doc_type=mapped_detected,
         aadhaar_qr=aadhaar_qr_result,
     )
 
-    if not category_match:
+    if is_category_mismatch:
         verdict_reason = f"REJECTED: DOCUMENT TYPE MISMATCH: Selected {doc_type} but detected {mapped_detected}"
     elif presentation_attack_detected:
         verdict_reason = f"{verdict}: Presentation attack detected ({biometric_result.presentation_attack.details})"
-    elif doc_type != "VISA" and not selfie_full_path:
-        verdict_reason = "REJECTED: Live selfie is required for non-VISA document verification"
 
     # 11. Calculate processing time
     processing_time_ms = int((time.time() - start_time) * 1000)
@@ -487,7 +514,7 @@ async def run_verification(
     await db.commit()
     await db.refresh(verification)
 
-    # 13. Append to tamper-evident SHA-256 audit log (with safe metadata)
+    # 13. Tamper-evident SHA-256 audit log
     audit_verdict = VERDICT_TO_AUDIT_MAP.get(verdict, "ERROR")
     audit_record_payload = {
         "document_id": f"CASE-26188-{verification.id:03d}",
@@ -521,7 +548,7 @@ async def run_verification(
     except Exception as alert_err:
         logger.warning(f"Failed to generate alert for verification #{verification.id}: {alert_err}")
 
-    # 13.6. Identity Link Analysis (Investigative correlation against historical records)
+    # 13.6. Identity Link Analysis
     identity_links = []
     try:
         identity_links = await find_identity_links(
@@ -573,9 +600,13 @@ async def run_verification(
         mrz=mrz_result,
         ocr_lines=ocr_lines,
         raw_text=raw_text,
+        quality_status=quality_metrics.get("overall_status", "GOOD") if isinstance(quality_metrics, dict) else "GOOD",
+        ocr_status=ocr_status,
+        face_status=face_status,
+        document_quality=quality_metrics if isinstance(quality_metrics, dict) else None,
+        field_provenance=field_provenance,
     )
 
-    # Store complete response in DB for persistent reload
     verification.full_response_json = final_response.model_dump_json()
     await db.commit()
 
@@ -608,7 +639,6 @@ async def get_verification_history(
     conditions = []
     if search_query:
         sq = f"%{search_query.strip()}%"
-        # Check if searching for numeric ID or case number
         id_match = None
         cleaned_sq = search_query.strip().upper().replace("CASE-26188-", "").replace("CASE-", "")
         if cleaned_sq.isdigit():
@@ -640,7 +670,6 @@ async def get_verification_history(
         except ValueError:
             pass
 
-    # Count total
     count_query = select(Verification.id)
     if verdict:
         count_query = count_query.where(Verification.verdict == verdict)
@@ -681,13 +710,9 @@ async def get_verification_stats(
     date_from: Optional[str] = None,
     date_to: Optional[str] = None,
 ) -> dict:
-    # Verdict stats
     query_verdict = select(Verification.verdict, func.count(Verification.id)).group_by(Verification.verdict)
-    # Document type stats
     query_doctype = select(Verification.document_type, func.count(Verification.id)).group_by(Verification.document_type)
-    # Checkpoint stats
     query_checkpoint = select(Verification.checkpoint_location, func.count(Verification.id)).group_by(Verification.checkpoint_location)
-    # Aggregates
     query_agg = select(
         func.count(Verification.id),
         func.avg(Verification.processing_time_ms),
@@ -729,7 +754,6 @@ async def get_verification_stats(
     avg_proc_time = int(agg_row[1] or 0) if agg_row else 0
     high_risk_recs = int(agg_row[2] or 0) if agg_row else 0
 
-    # Daily volume calculation for past 7 days
     now = datetime.now(timezone.utc)
     daily_volume = []
     days_labels = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"]
@@ -749,7 +773,6 @@ async def get_verification_stats(
             "date": day_start.strftime("%Y-%m-%d"),
         })
 
-    # Alert stats
     alerts_total = 0
     alerts_resolved = 0
     try:

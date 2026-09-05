@@ -127,10 +127,11 @@ async def verify_face(
             temp_selfie_path = f_selfie.name
 
         detailed = await match_faces_detailed(temp_id_path, temp_selfie_path)
+        score_val = detailed.get("score")
 
         return FaceVerifyResponse(
             status=detailed.get("status", "error"),
-            score=int(detailed.get("score", 0)),
+            score=int(score_val) if score_val is not None else 0,
             matched=bool(detailed.get("matched", False)),
             distance=detailed.get("distance"),
             threshold=float(detailed.get("threshold", 0.68)),

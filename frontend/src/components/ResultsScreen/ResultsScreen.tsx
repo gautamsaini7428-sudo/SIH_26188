@@ -234,37 +234,85 @@ export const ResultsScreen: React.FC<ResultsScreenProps> = ({
 
       {/* ─── DYNAMIC EXTRACTED FIELDS TABLE ─── */}
       <div className="dossier-sheet rounded-lg">
-        <div className="p-4 sm:p-5 border-b border-[#E3DCD6]">
-          <h4 className="font-editorial text-base font-bold text-[#0B2925]">
-            Extracted Specimen Fields ({result.document_type?.replace('_', ' ')})
-          </h4>
-          <p className="text-[11px] text-[#6E6571] font-sans mt-0.5">
-            Parsed OCR fields structured dynamically for this document type.
-          </p>
+        <div className="p-4 sm:p-5 border-b border-[#E3DCD6] flex flex-wrap items-center justify-between gap-2">
+          <div>
+            <h4 className="font-editorial text-base font-bold text-[#0B2925]">
+              Extracted Specimen Fields ({result.document_type?.replace('_', ' ')})
+            </h4>
+            <p className="text-[11px] text-[#6E6571] font-sans mt-0.5">
+              Parsed OCR fields structured dynamically for this document type.
+            </p>
+          </div>
+          <div className="flex items-center gap-2">
+            {result.quality_status && (
+              <span className={`text-[10px] font-mono px-2 py-0.5 rounded border ${
+                result.quality_status === 'GOOD'
+                  ? 'bg-[#A7F3D0]/30 text-[#0B2925] border-[#A7F3D0]'
+                  : result.quality_status === 'ACCEPTABLE'
+                  ? 'bg-[#E3DCD6] text-[#27212B] border-[#C8BFB8]'
+                  : 'bg-[#755B73]/15 text-[#755B73] border-[#755B73]/30'
+              }`}>
+                Quality: {result.quality_status}
+              </span>
+            )}
+            {result.ocr_status && (
+              <span className={`text-[10px] font-mono px-2 py-0.5 rounded border ${
+                result.ocr_status === 'SUCCESS'
+                  ? 'bg-[#A7F3D0]/30 text-[#0B2925] border-[#A7F3D0]'
+                  : result.ocr_status === 'FALLBACK_RAW'
+                  ? 'bg-[#FCF5E8] text-[#8C6B1B] border-[#E8D4A2]'
+                  : 'bg-[#755B73]/15 text-[#755B73] border-[#755B73]/30'
+              }`}>
+                OCR: {result.ocr_status}
+              </span>
+            )}
+          </div>
         </div>
 
-        <div className="divide-y divide-[#F2ECE9]">
-          {extractedEntries.map(([key, val]) => {
-            const isMono = key.includes('number') || key.includes('mrz') || key.includes('id')
-            return (
-              <div
-                key={key}
-                className="grid grid-cols-5 items-center px-4 sm:px-5 py-3 hover:bg-[#FCFAF8] transition-colors"
-              >
-                <div className="col-span-2 text-[11px] text-[#6E6571] font-sans font-semibold">
-                  {formatFieldKeyLabel(key)}
-                </div>
-                <div
-                  className={`col-span-3 text-sm font-sans ${
-                    isMono ? 'font-mono text-xs tracking-wider text-[#0B2925] font-bold' : 'text-[#27212B]'
-                  }`}
-                >
-                  {String(val)}
-                </div>
+        {extractedEntries.length === 0 ? (
+          <div className="p-6 text-center text-xs text-[#6E6571] font-sans">
+            No specific structured fields detected in document text.
+            {result.raw_text && (
+              <div className="mt-3 p-3 bg-[#FCFAF8] rounded border border-[#E3DCD6] text-left font-mono text-[11px] text-[#27212B] whitespace-pre-wrap max-h-40 overflow-y-auto">
+                {result.raw_text}
               </div>
-            )
-          })}
-        </div>
+            )}
+          </div>
+        ) : (
+          <div className="divide-y divide-[#F2ECE9]">
+            {extractedEntries.map(([key, val]) => {
+              const isMono = key.includes('number') || key.includes('mrz') || key.includes('id')
+              const prov = result.field_provenance?.[key]
+              return (
+                <div
+                  key={key}
+                  className="grid grid-cols-5 items-center px-4 sm:px-5 py-3 hover:bg-[#FCFAF8] transition-colors"
+                >
+                  <div className="col-span-2 text-[11px] text-[#6E6571] font-sans font-semibold flex items-center gap-1.5">
+                    {formatFieldKeyLabel(key)}
+                    {prov?.source && (
+                      <span className="text-[9px] font-mono px-1 py-0.2 bg-[#F2ECE9] text-[#6E6571] rounded">
+                        {prov.source}
+                      </span>
+                    )}
+                  </div>
+                  <div
+                    className={`col-span-3 text-sm font-sans flex items-center justify-between gap-2 ${
+                      isMono ? 'font-mono text-xs tracking-wider text-[#0B2925] font-bold' : 'text-[#27212B]'
+                    }`}
+                  >
+                    <span>{String(val)}</span>
+                    {prov?.confidence && (
+                      <span className="text-[10px] font-mono text-[#6E6571] opacity-70">
+                        {Math.round(prov.confidence * 100)}%
+                      </span>
+                    )}
+                  </div>
+                </div>
+              )
+            })}
+          </div>
+        )}
 
         {/* MRZ Zone Card if detected */}
         {result.mrz?.detected && result.mrz.raw && (

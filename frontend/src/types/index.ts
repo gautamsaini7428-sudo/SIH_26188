@@ -132,6 +132,11 @@ export interface VerifyResponse {
   examiner_timestamp?: string
   mrz?: MRZResult | null
   raw_text?: string | null
+  quality_status?: string
+  ocr_status?: string
+  face_status?: string
+  document_quality?: Record<string, any>
+  field_provenance?: Record<string, any>
 }
 
 export type ScreenMode = 'intake' | 'verifying' | 'results'

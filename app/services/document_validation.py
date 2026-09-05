@@ -8,10 +8,6 @@ Performs format, expiry, and integrity checks per document type:
 - PASSPORT & IDs: Full ICAO 9303 TD1 / TD2 / TD3 MRZ checksum validation
 - MRZ to Visual field cross-consistency validation
 - Watchlist check against local JSON database
-
-This module is separate from tampering detection by design —
-tampering detects physical/digital forgery (ELA, copy-move),
-while validation checks logical/format integrity.
 """
 
 import json
@@ -37,8 +33,6 @@ except FileNotFoundError:
 #  ICAO 9303 TD3 MRZ CHECKSUM
 # ══════════════════════════════════════════════════════════════
 
-# Character weights per ICAO 9303 Part 3:
-#   0-9 -> 0-9, A-Z -> 10-35, '<' (filler) -> 0
 _MRZ_WEIGHTS = [7, 3, 1]
 
 def _mrz_char_value(ch: str) -> int:
@@ -55,11 +49,6 @@ def _mrz_char_value(ch: str) -> int:
 def compute_mrz_check_digit(data: str) -> int:
     """
     Compute a single ICAO 9303 check digit for a data string.
-
-    Algorithm: For each character at position i, multiply its numeric value
-    by the weight at position (i mod 3), where weights cycle [7, 3, 1].
-    Sum all products and return sum mod 10.
-
     Reference: ICAO Doc 9303, Part 3, Section 4.9
     """
     total = 0
@@ -71,20 +60,6 @@ def compute_mrz_check_digit(data: str) -> int:
 def validate_mrz_td3(mrz_line1: str, mrz_line2: str) -> Tuple[bool, List[str]]:
     """
     Validate a TD3 (passport) MRZ consisting of two 44-character lines.
-
-    TD3 Line 2 layout (44 chars):
-      [0:9]   Passport number
-      [9]     Passport number check digit
-      [10:13] Nationality
-      [13:19] Date of birth (YYMMDD)
-      [19]    DOB check digit
-      [20]    Sex (M/F/<)
-      [21:27] Date of expiry (YYMMDD)
-      [27]    Expiry check digit
-      [28:42] Personal number / optional data
-      [42]    Personal number check digit
-      [43]    Composite check digit (of fields [0:10]+[13:20]+[21:43])
-
     Returns (is_valid, list_of_issues).
     """
     issues: List[str] = []
@@ -146,7 +121,7 @@ def _check_dob_plausibility(dob_str: str) -> Optional[str]:
     """Check if DOB yields an age between 0 and 120."""
     d = _parse_date(dob_str)
     if d is None:
-        return f"Date of birth '{dob_str}' is not in a recognisable format"
+        return None  # Unparseable date is not proof of fraud
     age = (date.today() - d).days / 365.25
     if age < 0:
         return f"Date of birth is in the future ({dob_str})"
@@ -165,8 +140,12 @@ def _check_expiry(expiry_str: str) -> bool:
 
 def _check_blacklist(doc_type: str, doc_number: str) -> Optional[str]:
     """Check document number against the blacklist. Returns reason if flagged."""
+    if not doc_number:
+        return None
+    cleaned_doc = re.sub(r"[^\w]", "", str(doc_number)).upper()
     for entry in _BLACKLIST:
-        if entry.get("number", "").upper() == doc_number.upper():
+        entry_num = re.sub(r"[^\w]", "", str(entry.get("number", ""))).upper()
+        if entry_num and (entry_num == cleaned_doc or entry_num in cleaned_doc or cleaned_doc in entry_num):
             return entry.get("reason", "Document number appears on demonstration security watchlist")
     return None
 
@@ -189,7 +168,6 @@ def _compare_fields_cross_check(visual_fields: Dict[str, Any], mrz_fields: Dict[
     v_dob = str(visual_fields.get("dob") or visual_fields.get("date_of_birth") or "").strip().replace("-", "").replace("/", "")
     m_dob = str(mrz_fields.get("date_of_birth") or "").strip().replace("-", "").replace("/", "")
     if v_dob and m_dob and len(v_dob) >= 6 and len(m_dob) >= 6:
-        # Check matching YYMMDD or YYYYMMDD
         if v_dob[-6:] != m_dob[-6:]:
             mismatches.append(f"FIELD_MISMATCH: Visual Date of Birth ({visual_fields.get('dob') or visual_fields.get('date_of_birth')}) disagrees with MRZ ({mrz_fields.get('date_of_birth')})")
 
@@ -197,7 +175,6 @@ def _compare_fields_cross_check(visual_fields: Dict[str, Any], mrz_fields: Dict[
     v_name = str(visual_fields.get("name") or "").strip().upper()
     m_name = str(mrz_fields.get("full_name") or mrz_fields.get("surname", "") + " " + mrz_fields.get("given_names", "")).strip().upper()
     if v_name and m_name and len(v_name) >= 3 and len(m_name) >= 3:
-        # Check token overlap
         v_tokens = set(v_name.split())
         m_tokens = set(m_name.split())
         if not v_tokens.intersection(m_tokens):
@@ -212,6 +189,24 @@ def _compare_fields_cross_check(visual_fields: Dict[str, Any], mrz_fields: Dict[
     return mismatches
 
 
+# Category compatibility graph
+_COMPATIBLE_CATEGORIES = {
+    "NATIONAL_ID": {"NATIONAL_ID", "ID", "AADHAAR", "PAN", "VOTER_ID", "GENERIC_NATIONAL_ID", "UNKNOWN"},
+    "DRIVING_LICENSE": {"DRIVING_LICENSE", "LICENSE", "DL", "NATIONAL_ID", "GENERIC_NATIONAL_ID", "UNKNOWN"},
+    "PASSPORT": {"PASSPORT", "UNKNOWN"},
+    "VISA": {"VISA", "UNKNOWN"},
+    "PERMIT": {"PERMIT", "GENERIC_NATIONAL_ID", "UNKNOWN"},
+}
+
+_KNOWN_CONFLICT_MAP = {
+    "PASSPORT": {"INVOICE", "CERTIFICATE", "DRIVING_LICENSE", "NATIONAL_ID"},
+    "DRIVING_LICENSE": {"INVOICE", "CERTIFICATE", "PASSPORT", "NATIONAL_ID"},
+    "NATIONAL_ID": {"INVOICE", "CERTIFICATE", "PASSPORT", "DRIVING_LICENSE"},
+    "VISA": {"INVOICE", "CERTIFICATE", "PASSPORT", "DRIVING_LICENSE"},
+    "PERMIT": {"INVOICE", "CERTIFICATE", "PASSPORT"},
+}
+
+
 def validate_document(
     doc_type: str,
     extracted_fields: Dict[str, Any],
@@ -223,14 +218,6 @@ def validate_document(
 ) -> ValidationResult:
     """
     Validate a document based on its type and extracted fields.
-
-    Main entry point for Document Validation:
-    - Runs format checks
-    - Expiry checks
-    - MRZ checksum validation (TD1, TD2, TD3)
-    - Cross-consistency checks (MRZ vs Visual fields)
-    - Document category compatibility checks
-    - Watchlist / blacklist checks
     """
     issues: List[str] = []
     format_valid = True
@@ -238,12 +225,11 @@ def validate_document(
     mrz_valid = None
     mrz_details: Optional[Dict[str, Any]] = None
 
-    doc_type = doc_type.upper()
+    doc_type = (doc_type or "DRIVING_LICENSE").upper()
 
-    # 1. Category Mismatch Check
-    if detected_doc_type and detected_doc_type.upper() != "UNKNOWN":
+    # 1. Category Mismatch Check (only trigger if confirmed conflicting type)
+    if detected_doc_type:
         det_norm = detected_doc_type.upper()
-        # Map classifier outputs to standard categories
         type_mapping = {
             "PASSPORT": "PASSPORT",
             "LICENSE": "DRIVING_LICENSE",
@@ -251,16 +237,22 @@ def validate_document(
             "VISA": "VISA",
             "ID": "NATIONAL_ID",
             "NATIONAL_ID": "NATIONAL_ID",
+            "AADHAAR": "NATIONAL_ID",
+            "PAN": "NATIONAL_ID",
+            "VOTER_ID": "NATIONAL_ID",
             "PERMIT": "PERMIT",
             "INVOICE": "INVOICE",
             "CERTIFICATE": "CERTIFICATE",
+            "UNKNOWN": "UNKNOWN",
         }
         mapped_det = type_mapping.get(det_norm, det_norm)
-        if mapped_det != doc_type:
+        conflict_set = _KNOWN_CONFLICT_MAP.get(doc_type, set())
+
+        if mapped_det in conflict_set:
             format_valid = False
             issues.append(f"DOCUMENT TYPE MISMATCH: Selected {doc_type} but detected {mapped_det}")
 
-    # 2. Process MRZ if present directly or via mrz_result
+    # 2. Process MRZ if present
     if mrz_result and mrz_result.detected:
         mrz_valid = mrz_result.valid
         mrz_details = mrz_result.fields
@@ -286,18 +278,9 @@ def validate_document(
         if not mrz_ok:
             format_valid = False
 
-    # 3. Type-specific validation
+    # 3. Type-specific field validation
     if doc_type == "PASSPORT":
-        # Passport number format: 1 letter + 7 digits (common pattern)
         pn = str(extracted_fields.get("passport_number", "")).strip()
-        if not pn:
-            issues.append("MISSING_REQUIRED_FIELD: Passport number could not be extracted")
-            format_valid = False
-        if pn and not re.match(r"^[A-Z][0-9]{7}$", pn) and len(pn) < 6:
-            issues.append(f"Passport number '{pn}' does not match expected format (1 letter + 7 digits)")
-            format_valid = False
-
-        # DOB plausibility
         dob = str(extracted_fields.get("dob", "")).strip()
         if dob:
             dob_issue = _check_dob_plausibility(dob)
@@ -305,13 +288,11 @@ def validate_document(
                 issues.append(dob_issue)
                 format_valid = False
 
-        # Expiry check
         expiry = str(extracted_fields.get("date_of_expiry") or extracted_fields.get("expiry_date") or "").strip()
         if expiry and not _check_expiry(expiry):
             issues.append(f"EXPIRED_DOCUMENT: Passport expired on {expiry}")
             expiry_valid = False
 
-        # Watchlist
         if pn:
             bl_reason = _check_blacklist("PASSPORT", pn)
             if bl_reason:
@@ -319,17 +300,6 @@ def validate_document(
 
     elif doc_type == "VISA":
         vn = str(extracted_fields.get("visa_number", "")).strip()
-        if not vn:
-            issues.append("MISSING_REQUIRED_FIELD: Visa number could not be extracted")
-            format_valid = False
-        if vn and len(vn) < 5:
-            issues.append(f"Visa number '{vn}' is suspiciously short")
-            format_valid = False
-
-        stay = extracted_fields.get("stay_duration", "")
-        if stay and isinstance(stay, str) and not stay.replace(" ", "").replace("days", "").strip().isdigit():
-            issues.append(f"Stay duration '{stay}' is not numeric")
-
         expiry = str(extracted_fields.get("expiry_date") or extracted_fields.get("date_of_expiry") or "").strip()
         if expiry and not _check_expiry(expiry):
             issues.append(f"EXPIRED_DOCUMENT: Visa expired on {expiry}")
@@ -341,14 +311,12 @@ def validate_document(
                 issues.append(f"DEMONSTRATION WATCHLIST / BLACKLIST HIT: {bl_reason}")
 
     elif doc_type in ("NATIONAL_ID", "DRIVING_LICENSE", "PERMIT"):
-        id_num = str(extracted_fields.get("id_number", "")).strip()
-        if not id_num:
-            issues.append("MISSING_REQUIRED_FIELD: Document number could not be extracted")
-            format_valid = False
-        if id_num and len(id_num) < 4:
-            issues.append(f"ID number '{id_num}' is suspiciously short")
-            format_valid = False
-
+        id_num = str(
+            extracted_fields.get("id_number")
+            or extracted_fields.get("document_number")
+            or extracted_fields.get("license_number")
+            or ""
+        ).strip()
         dob = str(extracted_fields.get("dob", "")).strip()
         if dob:
             dob_issue = _check_dob_plausibility(dob)

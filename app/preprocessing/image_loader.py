@@ -27,10 +27,21 @@ def load_image_from_bytes(file_bytes: bytes, filename: str = "") -> List[np.ndar
             except Exception:
                 pass
 
-            # Convert to RGB (handles RGBA, Palette, Grayscale, etc.)
-            if image.mode != "RGB":
+            # Handle transparency (RGBA, LA, Palette with transparency) on white background
+            if image.mode in ("RGBA", "LA") or (image.mode == "P" and "transparency" in image.info):
+                bg = Image.new("RGB", image.size, (255, 255, 255))
+                rgba = image.convert("RGBA")
+                bg.paste(rgba, mask=rgba.split()[3])
+                image = bg
+            elif image.mode != "RGB":
                 image = image.convert("RGB")
-            return [np.array(image)]
+
+            img_np = np.array(image)
+            logger.debug(
+                f"[Image Loader] Loaded {filename or 'image'}: size={image.size}, "
+                f"mode={image.mode}, ndarray_shape={img_np.shape}, dtype={img_np.dtype}"
+            )
+            return [img_np]
         except Exception as e:
             logger.error(f"Failed to decode image from bytes: {e}")
             raise ValueError(f"Invalid image format: {e}")

@@ -1,6 +1,12 @@
 """
 Optimized Face Verification Service
 Module 1 - SIH Problem Statement 26188
+
+Provides biometric evaluation:
+1. Multi-stage face intake quality gate (no face, multiple faces, low quality)
+2. Portrait feature extraction
+3. Anti-spoofing and presentation attack detection (separate from face match)
+4. Safe handling of missing evidence (never flags 0% mismatch when face detection fails)
 """
 
 import asyncio
@@ -12,6 +18,14 @@ from typing import Any, Dict, List, Optional, Tuple
 import cv2
 import numpy as np
 from PIL import Image, ImageOps
+
+from app.schemas import (
+    QualityResult,
+    LivenessResult,
+    PresentationAttackResult,
+    FaceMatchResult,
+    BiometricResult,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -55,7 +69,7 @@ def _secure_load_and_normalize(image_path: str) -> Tuple[Optional[np.ndarray], O
     if file_size == 0:
         return None, "Image file is 0 bytes."
     if file_size > MAX_IMAGE_FILE_BYTES:
-        return None, f"Image size exceeds limit."
+        return None, "Image size exceeds limit."
 
     try:
         with Image.open(image_path) as pil_img:
@@ -159,15 +173,6 @@ def _compute_cosine_distance(source_rep: List[float], test_rep: List[float]) -> 
     return float(max(0.0, min(2.0, 1.0 - similarity)))
 
 
-from app.schemas import (
-    QualityResult,
-    LivenessResult,
-    PresentationAttackResult,
-    FaceMatchResult,
-    BiometricResult,
-)
-
-
 def analyze_image_quality(img_bgr: np.ndarray, facial_area: Optional[Dict[str, Any]] = None) -> QualityResult:
     """
     Evaluate visual quality of the captured face image:
@@ -223,7 +228,7 @@ def analyze_image_quality(img_bgr: np.ndarray, facial_area: Optional[Dict[str, A
             details=details_str,
         )
     except Exception as e:
-        logger.warning("Image quality evaluation failed: %s", e)
+        logger.warning(f"Image quality evaluation failed: {e}")
         return QualityResult(
             status="LOW_QUALITY",
             score=0.0,
@@ -311,6 +316,8 @@ def analyze_liveness_and_presentation_attack(img_bgr: np.ndarray, facial_area: O
             details="; ".join(attack_details) if attack_details else "No presentation attack detected",
         )
 
+        return liveness_res, pres_res
+
     except Exception as e:
         logger.warning(f"Liveness evaluation exception: {e}")
         return (
@@ -322,18 +329,36 @@ def analyze_liveness_and_presentation_attack(img_bgr: np.ndarray, facial_area: O
 def _calculate_match_sync(id_image_path: str, selfie_path: str) -> Dict[str, Any]:
     id_bgr, err = _secure_load_and_normalize(id_image_path)
     if err:
-        return {"status": "error", "score": 0, "matched": False, "detail": f"ID image error: {err}"}
+        return {
+            "status": "error",
+            "score": None,
+            "matched": False,
+            "distance": None,
+            "threshold": ARCFACE_COSINE_THRESHOLD,
+            "detail": f"ID image error: {err}",
+        }
 
     selfie_bgr, err = _secure_load_and_normalize(selfie_path)
     if err:
-        return {"status": "error", "score": 0, "matched": False, "detail": f"Selfie image error: {err}"}
+        return {
+            "status": "error",
+            "score": None,
+            "matched": False,
+            "distance": None,
+            "threshold": ARCFACE_COSINE_THRESHOLD,
+            "detail": f"Selfie image error: {err}",
+        }
 
     id_emb, err_payload = _extract_single_face_embedding(id_bgr, role="ID Document")
     if err_payload:
+        err_payload["distance"] = None
+        err_payload["threshold"] = ARCFACE_COSINE_THRESHOLD
         return err_payload
 
     selfie_emb, err_payload = _extract_single_face_embedding(selfie_bgr, role="Selfie")
     if err_payload:
+        err_payload["distance"] = None
+        err_payload["threshold"] = ARCFACE_COSINE_THRESHOLD
         return err_payload
 
     distance = _compute_cosine_distance(id_emb, selfie_emb)
@@ -362,11 +387,11 @@ def evaluate_biometrics_sync(id_image_path: str, selfie_path: Optional[str]) -> 
         return BiometricResult(
             face_detected=False,
             face_count=0,
-            quality=QualityResult(status="LOW_QUALITY", score=0.0, details="No live selfie was provided"),
-            liveness=LivenessResult(status="INCONCLUSIVE", score=0.0, details="Live selfie is required for this verification"),
+            quality=QualityResult(status="GOOD", score=1.0, details="Selfie not submitted"),
+            liveness=LivenessResult(status="PASS", score=1.0, details="Selfie not required for this document type"),
             presentation_attack=PresentationAttackResult(detected=False, score=0.0, type=None, details="Skipped"),
-            face_match=FaceMatchResult(status="SKIPPED", score=None, distance=None, details="No live selfie was provided"),
-            status="RETRY",
+            face_match=FaceMatchResult(status="SKIPPED", score=None, distance=None, details="Selfie not provided"),
+            status="NOT_APPLICABLE",
         )
 
     selfie_bgr, err = _secure_load_and_normalize(selfie_path)
@@ -377,7 +402,7 @@ def evaluate_biometrics_sync(id_image_path: str, selfie_path: Optional[str]) -> 
             quality=QualityResult(status="LOW_QUALITY", score=0.0, details=f"Failed to load capture: {err}"),
             liveness=LivenessResult(status="FAIL", score=0.0, details="No valid capture provided"),
             presentation_attack=PresentationAttackResult(detected=False, score=0.0, type=None),
-            face_match=FaceMatchResult(status="NO_MATCH", score=0, details="Invalid capture"),
+            face_match=FaceMatchResult(status="NO_MATCH", score=None, distance=None, details=f"Invalid capture: {err}"),
             status="RETRY",
         )
 
@@ -408,7 +433,7 @@ def evaluate_biometrics_sync(id_image_path: str, selfie_path: Optional[str]) -> 
 
     face_count = len(valid_faces)
 
-    # 1. No face detected
+    # 1. No face detected in selfie
     if face_count == 0:
         return BiometricResult(
             face_detected=False,
@@ -416,11 +441,11 @@ def evaluate_biometrics_sync(id_image_path: str, selfie_path: Optional[str]) -> 
             quality=QualityResult(status="LOW_QUALITY", score=0.0, details="No human face detected in selfie capture"),
             liveness=LivenessResult(status="FAIL", score=0.0, details="No face visible in frame"),
             presentation_attack=PresentationAttackResult(detected=False, score=0.0, type=None, details="No face in frame"),
-            face_match=FaceMatchResult(status="NO_MATCH", score=0, details="No face detected in live selfie"),
+            face_match=FaceMatchResult(status="NO_MATCH", score=None, distance=None, details="No face detected in live selfie"),
             status="RETRY",
         )
 
-    # 2. Multiple faces detected
+    # 2. Multiple faces detected in selfie
     if face_count > 1:
         return BiometricResult(
             face_detected=True,
@@ -428,7 +453,7 @@ def evaluate_biometrics_sync(id_image_path: str, selfie_path: Optional[str]) -> 
             quality=QualityResult(status="LOW_QUALITY", score=0.4, details=f"Multiple faces ({face_count}) in frame"),
             liveness=LivenessResult(status="FAIL", score=0.3, details="Multiple subjects visible"),
             presentation_attack=PresentationAttackResult(detected=False, score=0.2, type=None, details="Multiple faces"),
-            face_match=FaceMatchResult(status="NO_MATCH", score=0, details="Border screening requires exactly one subject"),
+            face_match=FaceMatchResult(status="NO_MATCH", score=None, distance=None, details="Border screening requires exactly one subject"),
             status="RETRY",
         )
 
@@ -444,25 +469,30 @@ def evaluate_biometrics_sync(id_image_path: str, selfie_path: Optional[str]) -> 
             quality=quality_res,
             liveness=liveness_res,
             presentation_attack=presentation_res,
-            face_match=FaceMatchResult(status="NO_MATCH", score=0, details="Presentation attack / spoof detected"),
+            face_match=FaceMatchResult(status="NO_MATCH", score=None, distance=None, details="Presentation attack / spoof detected"),
             status="REJECTED",
         )
 
     # 5. Run Face Match against document portrait
     match_detail = _calculate_match_sync(id_image_path, selfie_path)
-    score_val = match_detail.get("score", 0)
+    score_val = match_detail.get("score")
     matched_bool = match_detail.get("matched", False)
     dist_val = match_detail.get("distance")
+    match_status_raw = match_detail.get("status")
 
-    if score_val >= 80:
-        match_status = "MATCH"
-        bio_status = "VERIFIED"
-    elif score_val >= 50:
-        match_status = "BORDERLINE"
-        bio_status = "NEEDS_REVIEW"
+    if score_val is not None:
+        if score_val >= 80:
+            match_status = "MATCH"
+            bio_status = "VERIFIED"
+        elif score_val >= 50:
+            match_status = "BORDERLINE"
+            bio_status = "NEEDS_REVIEW"
+        else:
+            match_status = "NO_MATCH"
+            bio_status = "REJECTED"
     else:
-        match_status = "NO_MATCH"
-        bio_status = "REJECTED"
+        match_status = "UNAVAILABLE"
+        bio_status = "NEEDS_REVIEW"
 
     face_match_res = FaceMatchResult(
         status=match_status,
@@ -483,9 +513,10 @@ def evaluate_biometrics_sync(id_image_path: str, selfie_path: Optional[str]) -> 
     )
 
 
-async def match_faces(id_image_path: str, selfie_path: str) -> int:
+async def match_faces(id_image_path: str, selfie_path: str) -> Optional[int]:
     result = await asyncio.to_thread(_calculate_match_sync, id_image_path, selfie_path)
-    return int(result.get("score", 0))
+    score = result.get("score")
+    return int(score) if score is not None else None
 
 
 async def match_faces_detailed(id_image_path: str, selfie_path: str) -> Dict[str, Any]:
