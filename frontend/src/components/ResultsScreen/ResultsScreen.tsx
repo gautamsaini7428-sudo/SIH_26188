@@ -6,6 +6,7 @@ import { DossierStamp } from '../Common/DossierStamp'
 import { RiskScoreGauge } from './RiskScoreGauge'
 import { ValidationPanel } from './ValidationPanel'
 import { CaseFileExportModal } from '../Common/CaseFileExportModal'
+import { AadhaarQRCard } from '../Verification/AadhaarQRCard'
 import { soundFX } from '../../utils/audio'
 
 interface ResultsScreenProps {
@@ -285,6 +286,13 @@ export const ResultsScreen: React.FC<ResultsScreenProps> = ({
             <div className="font-mono text-xs p-3 rounded bg-[#27212B] text-[#A7F3D0] tracking-widest leading-relaxed whitespace-pre overflow-x-auto selection:bg-[#0B2925]">
               {result.mrz.raw}
             </div>
+          </div>
+        )}
+
+        {/* Aadhaar Secure QR Cryptographic Verification Card */}
+        {(result.document_type === 'NATIONAL_ID' || result.aadhaar_qr) && (
+          <div className="p-4 sm:p-5 border-t border-[#E3DCD6] bg-[#FCFAF8]">
+            <AadhaarQRCard aadhaarQr={result.aadhaar_qr} extractedFields={result.extracted_fields} />
           </div>
         )}
       </div>

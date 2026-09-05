@@ -83,16 +83,16 @@ async def verify_face(
     import os
     import tempfile
     from app.services._face_match_impl import match_faces_detailed
-    from app.utils.file_handler import ALLOWED_EXTENSIONS
+    from app.utils.file_handler import IMAGE_EXTENSIONS, validate_file_content
 
     # Validate extensions
     id_ext = os.path.splitext(id_file.filename or "")[1].lower()
     selfie_ext = os.path.splitext(selfie_file.filename or "")[1].lower()
 
-    if id_ext not in ALLOWED_EXTENSIONS or selfie_ext not in ALLOWED_EXTENSIONS:
+    if id_ext not in IMAGE_EXTENSIONS or selfie_ext not in IMAGE_EXTENSIONS:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail=f"Unsupported file format. Supported: {', '.join(ALLOWED_EXTENSIONS)}",
+            detail=f"Unsupported file format. Supported image types: {', '.join(sorted(IMAGE_EXTENSIONS))}",
         )
 
     # Read bytes and validate size
@@ -110,6 +110,9 @@ async def verify_face(
             status_code=status.HTTP_413_REQUEST_ENTITY_TOO_LARGE,
             detail=f"File exceeds maximum size of {settings.max_file_size_mb}MB.",
         )
+
+    validate_file_content(id_bytes, id_file.filename or "")
+    validate_file_content(selfie_bytes, selfie_file.filename or "")
 
     temp_id_path = None
     temp_selfie_path = None

@@ -21,6 +21,7 @@ import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '.
 import { RiskGauge } from './RiskGauge'
 import { ValidationAccordion } from './ValidationAccordion'
 import { TamperingHeatmap } from './TamperingHeatmap'
+import { AadhaarQRCard } from './AadhaarQRCard'
 import type { VerifyResponse } from '../../types'
 import { soundFX } from '../../utils/audio'
 
@@ -326,8 +327,13 @@ export const ResultsView: React.FC<ResultsViewProps> = ({
             </CardContent>
           </Card>
 
-          {/* ── 4. MRZ ANALYSIS SECTION ── */}
+          {/* ── 4. MRZ ANALYSIS SECTION (FOR PASSPORT / TD1 / TD2) ── */}
           <ValidationAccordion validation={validation} documentType={document_type} mrz={mrz} />
+
+          {/* ── 4.5. AADHAAR SECURE QR CRYPTOGRAPHIC VERIFICATION (FOR NATIONAL_ID) ── */}
+          {(document_type === 'NATIONAL_ID' || result.aadhaar_qr) && (
+            <AadhaarQRCard aadhaarQr={result.aadhaar_qr} extractedFields={extracted_fields} />
+          )}
 
           {/* ── 5. TAMPERING ANALYSIS (SCORE, STATUS, INDICATORS & ELA HEATMAP) ── */}
           <TamperingHeatmap

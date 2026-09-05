@@ -63,6 +63,53 @@ async def init_db() -> None:
             except Exception:
                 pass
 
+    # Ensure demo users are present
+    try:
+        from app.auth import get_password_hash
+        from app.models import User
+        from sqlalchemy import select, or_
+
+        demo_users = [
+            {
+                "email": "officer.attari@mha.gov.in",
+                "username": "officer_attari",
+                "password_hash": get_password_hash("Password@123"),
+                "role": "OFFICER",
+                "checkpoint_location": "Attari-Wagah Border",
+            },
+            {
+                "email": "officer.petrapole@mha.gov.in",
+                "username": "officer_petrapole",
+                "password_hash": get_password_hash("Password@123"),
+                "role": "OFFICER",
+                "checkpoint_location": "Petrapole-Benapole Crossing",
+            },
+            {
+                "email": "supervisor.delhi@mha.gov.in",
+                "username": "supervisor_delhi",
+                "password_hash": get_password_hash("Password@123"),
+                "role": "SUPERVISOR",
+                "checkpoint_location": "Border HQ (All Checkpoints)",
+            },
+            {
+                "email": "admin@mha.gov.in",
+                "username": "admin",
+                "password_hash": get_password_hash("Password@123"),
+                "role": "SUPERVISOR",
+                "checkpoint_location": "Central Command",
+            },
+        ]
+        async with async_session_maker() as session:
+            for u_data in demo_users:
+                existing = await session.execute(
+                    select(User).where(or_(User.email == u_data["email"], User.username == u_data["username"]))
+                )
+                if not existing.scalar_one_or_none():
+                    session.add(User(**u_data))
+            await session.commit()
+    except Exception:
+        pass
+
 
 async def close_db() -> None:
     await engine.dispose()

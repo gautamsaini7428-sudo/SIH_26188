@@ -144,7 +144,7 @@ The primary metric is a normalized 0–100 integer score computed via weighted e
 ## 16. Installation & Setup
 
 ### Prerequisites
-- Python 3.10+ (Tested on Python 3.12 / 3.14)
+- Python 3.12 (the Docker image and DeepFace/TensorFlow dependency stack use Python 3.12)
 - Node.js 18+ and npm
 
 ### Backend Setup
@@ -161,7 +161,7 @@ pip install -r requirements.txt
 ### Frontend Setup
 ```bash
 cd frontend
-npm install
+npm ci
 ```
 
 ---
@@ -198,7 +198,8 @@ Web Application: [http://localhost:5173](http://localhost:5173) (or 5174)
 ```bash
 .venv\Scripts\python.exe -m pytest -q
 ```
-*Expected: 99 passed in < 45 seconds.*
+Run this command in the supported Python 3.12 environment; do not treat an
+unverified historic test count as a release signal.
 
 ### Run Phase 4 Production Matrix
 ```bash

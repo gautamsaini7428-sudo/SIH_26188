@@ -8,7 +8,6 @@ import os
 from contextlib import asynccontextmanager
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.staticfiles import StaticFiles
 from fastapi.responses import JSONResponse
 
 from app.config import get_settings
@@ -73,9 +72,9 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Static files for uploads (heatmaps, etc.)
+# Keep uploaded identity documents private.  Verification responses carry the
+# generated heatmap inline; raw uploads must never be published as static files.
 os.makedirs(settings.upload_dir, exist_ok=True)
-app.mount("/uploads", StaticFiles(directory=settings.upload_dir), name="uploads")
 
 # Routers
 app.include_router(auth.router)

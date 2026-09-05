@@ -290,6 +290,9 @@ def validate_document(
     if doc_type == "PASSPORT":
         # Passport number format: 1 letter + 7 digits (common pattern)
         pn = str(extracted_fields.get("passport_number", "")).strip()
+        if not pn:
+            issues.append("MISSING_REQUIRED_FIELD: Passport number could not be extracted")
+            format_valid = False
         if pn and not re.match(r"^[A-Z][0-9]{7}$", pn) and len(pn) < 6:
             issues.append(f"Passport number '{pn}' does not match expected format (1 letter + 7 digits)")
             format_valid = False
@@ -316,6 +319,9 @@ def validate_document(
 
     elif doc_type == "VISA":
         vn = str(extracted_fields.get("visa_number", "")).strip()
+        if not vn:
+            issues.append("MISSING_REQUIRED_FIELD: Visa number could not be extracted")
+            format_valid = False
         if vn and len(vn) < 5:
             issues.append(f"Visa number '{vn}' is suspiciously short")
             format_valid = False
@@ -336,6 +342,9 @@ def validate_document(
 
     elif doc_type in ("NATIONAL_ID", "DRIVING_LICENSE", "PERMIT"):
         id_num = str(extracted_fields.get("id_number", "")).strip()
+        if not id_num:
+            issues.append("MISSING_REQUIRED_FIELD: Document number could not be extracted")
+            format_valid = False
         if id_num and len(id_num) < 4:
             issues.append(f"ID number '{id_num}' is suspiciously short")
             format_valid = False

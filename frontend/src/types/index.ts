@@ -90,6 +90,19 @@ export interface IdentityLinkItem {
   details: string
 }
 
+export interface AadhaarQRResult {
+  detected: boolean
+  decoded: boolean
+  signature_valid?: boolean | null
+  verification_status: string
+  signed_fields: Record<string, any>
+  field_matches: Record<string, boolean | null>
+  mismatches: string[]
+  photo_available: boolean
+  error_code?: string | null
+  message?: string | null
+}
+
 export interface VerifyResponse {
   verification_id?: number
   document_type: DocumentType
@@ -111,6 +124,7 @@ export interface VerifyResponse {
   reason?: string
   security_checks?: SecurityCheckItem[]
   identity_links?: IdentityLinkItem[]
+  aadhaar_qr?: AadhaarQRResult | null
   processing_time_ms?: number
   case_number?: string
   checkpoint_location?: string

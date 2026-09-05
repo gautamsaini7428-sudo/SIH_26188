@@ -9,6 +9,8 @@ import uuid
 import aiofiles
 from pathlib import Path
 from typing import Optional
+from io import BytesIO
+from PIL import Image, UnidentifiedImageError
 from fastapi import UploadFile, HTTPException, status
 from app.config import get_settings
 
@@ -23,6 +25,7 @@ ALLOWED_MIME_TYPES = {
     "image/tiff",
     "image/webp",
 }
+IMAGE_EXTENSIONS = {".jpg", ".jpeg", ".png", ".bmp", ".tiff", ".webp"}
 
 
 def validate_file(file: UploadFile) -> None:
@@ -35,17 +38,34 @@ def validate_file(file: UploadFile) -> None:
             detail=f"File type not allowed. Allowed: {', '.join(ALLOWED_EXTENSIONS)}",
         )
 
-    # Check MIME type (basic check, can be spoofed)
-    if file.content_type and file.content_type not in ALLOWED_MIME_TYPES:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail=f"MIME type not allowed: {file.content_type}",
-        )
+
+def validate_file_content(content: bytes, filename: str, content_type: Optional[str] = None) -> None:
+    """Verify that uploaded bytes match the accepted document format."""
+    ext = Path(filename or "").suffix.lower()
+    if not content:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Uploaded file cannot be empty.")
+
+    if ext == ".pdf":
+        try:
+            from pypdf import PdfReader
+            reader = PdfReader(BytesIO(content), strict=False)
+            if not reader.pages:
+                raise ValueError("PDF has no pages")
+        except Exception:
+            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Uploaded file is not a valid PDF document.")
+        return
+
+    if ext in IMAGE_EXTENSIONS:
+        try:
+            with Image.open(BytesIO(content)) as image:
+                image.verify()
+        except (UnidentifiedImageError, OSError, ValueError):
+            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Uploaded file is not a valid supported image.")
 
 
 async def save_upload_file(file: UploadFile, subdir: str = "") -> str:
     """
-    Save uploaded file asynchronously with unique name.
+    Save an uploaded file asynchronously with a unique name.
 
     Args:
         file: FastAPI UploadFile object
@@ -71,6 +91,8 @@ async def save_upload_file(file: UploadFile, subdir: str = "") -> str:
             status_code=status.HTTP_413_REQUEST_ENTITY_TOO_LARGE,
             detail=f"File too large. Max size: {settings.max_file_size_mb}MB",
         )
+
+    validate_file_content(content, file.filename or "")
 
     # Save asynchronously
     async with aiofiles.open(file_path, "wb") as f:

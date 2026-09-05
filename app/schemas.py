@@ -154,6 +154,21 @@ class IdentityLinkItem(BaseModel):
     details: str
 
 
+# ── Aadhaar Secure QR Result ──
+
+class AadhaarQRResult(BaseModel):
+    detected: bool = False
+    decoded: bool = False
+    signature_valid: Optional[bool] = None
+    verification_status: str = "NOT_VERIFIED"
+    signed_fields: Dict[str, Any] = Field(default_factory=dict)
+    field_matches: Dict[str, Optional[bool]] = Field(default_factory=dict)
+    mismatches: List[str] = Field(default_factory=list)
+    photo_available: bool = False
+    error_code: Optional[str] = None
+    message: Optional[str] = None
+
+
 # ── Primary API Response ──
 
 class VerifyResponse(BaseModel):
@@ -176,6 +191,7 @@ class VerifyResponse(BaseModel):
     reason: Optional[str] = None
     security_checks: List[SecurityCheckItem] = Field(default_factory=list)
     identity_links: List[IdentityLinkItem] = Field(default_factory=list)
+    aadhaar_qr: Optional[AadhaarQRResult] = None
     processing_time_ms: Optional[int] = None
     case_number: Optional[str] = None
     checkpoint_location: Optional[str] = None

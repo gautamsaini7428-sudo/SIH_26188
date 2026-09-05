@@ -6,21 +6,22 @@ Coordinates the full document verification pipeline with fast-fail validation:
 2. FAST-FAIL INTAKE GATE (detectable text & face presence except for VISA) -> returns verdict="REJECTED" immediately on non-documents or building sketches
 3. Run OCR field extraction (type-aware for PASSPORT, VISA, NATIONAL_ID, DRIVING_LICENSE, PERMIT)
 4. Run Standalone Document Validation module (format, expiry, MRZ checksum math, blacklist check)
-5. Run Tampering / ELA forensic analysis (generates palette heatmap base64)
-6. Run Face Match module (skip for VISA or missing selfie)
-7. Compute weighted risk_score (primary output 0-100)
-8. Derive verdict (GENUINE | SUSPICIOUS | FAKE | REJECTED) from risk_score + hard gates
-9. Store record with checkpoint_location in SQLite database and return structured response
+5. Aadhaar Secure QR Cryptographic Verification Module (ONLY for NATIONAL_ID)
+6. Run Tampering / ELA forensic analysis (generates palette heatmap base64)
+7. Run Face Match module (skip for VISA or missing selfie)
+8. Compute weighted risk_score (primary output 0-100)
+9. Derive verdict (GENUINE | SUSPICIOUS | FAKE | REJECTED) from risk_score + hard gates
+10. Store record with checkpoint_location in SQLite database and return structured response
 """
 
 import time
 import json
 import random
 import logging
-from datetime import datetime, timezone
+from datetime import datetime, timezone, timedelta
 from typing import Optional, List, Tuple
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select
+from sqlalchemy import select, func, case, or_
 from fastapi import UploadFile
 
 from app.services.document_validator import (
@@ -31,6 +32,7 @@ from app.services.document_validation import validate_document
 from app.services.ocr import extract_fields
 from app.services.tampering import detect_tampering
 from app.services.face_match import match_faces, run_biometric_evaluation
+from app.services.aadhaar_qr import verify_aadhaar_secure_qr
 from app.services.audit_log import log_verification
 from app.services.alert_service import create_alert_for_verification
 from app.utils.verdict import (
@@ -52,7 +54,7 @@ VERDICT_TO_AUDIT_MAP = {
 }
 
 from app.utils.file_handler import save_upload_file
-from app.models import Verification
+from app.models import Verification, Alert
 from app.schemas import (
     VerifyResponse,
     ValidationResult,
@@ -60,6 +62,7 @@ from app.schemas import (
     SecurityCheckItem,
     BiometricResult,
     IdentityLinkItem,
+    AadhaarQRResult,
 )
 from app.config import get_settings
 
@@ -310,6 +313,25 @@ async def run_verification(
         detected_doc_type=detected_doc_type,
     )
 
+    # 5.5. Aadhaar Secure QR Cryptographic Verification Module (ONLY for NATIONAL_ID)
+    aadhaar_qr_result: Optional[AadhaarQRResult] = None
+    if doc_type == "NATIONAL_ID":
+        try:
+            aadhaar_qr_result = await verify_aadhaar_secure_qr(
+                image_source=id_full_path,
+                ocr_fields=extracted_fields_dict,
+            )
+        except Exception as qr_err:
+            logger.warning(f"Error during Aadhaar Secure QR verification: {qr_err}")
+            aadhaar_qr_result = AadhaarQRResult(
+                detected=False,
+                decoded=False,
+                signature_valid=None,
+                verification_status="INCONCLUSIVE",
+                error_code="CRYPTO_VERIFIER_ERROR",
+                message=f"Aadhaar QR verification encountered an error: {str(qr_err)}",
+            )
+
     # 6. Tampering Forensic Detection (ELA, Frequency, Splicing)
     tampering_result = await detect_tampering(id_full_path)
 
@@ -332,6 +354,7 @@ async def run_verification(
         category_mismatch=not category_match,
         is_low_quality=is_low_quality,
         is_expired=bool(not val_result.expiry_valid),
+        aadhaar_qr=aadhaar_qr_result,
     )
     risk_level = get_risk_level(risk_score)
 
@@ -345,6 +368,7 @@ async def run_verification(
         face_obstructed=False,
         category_mismatch=not category_match,
         is_low_quality=is_low_quality,
+        aadhaar_qr=aadhaar_qr_result,
     )
 
     # 9. Generate Security Checks
@@ -353,6 +377,8 @@ async def run_verification(
         face_match_score=face_match_score if doc_type != "VISA" else None,
         ocr_confidence=ocr_confidence,
         validation=val_result,
+        aadhaar_qr=aadhaar_qr_result,
+        doc_type=doc_type,
     )
 
     security_checks = [
@@ -375,13 +401,22 @@ async def run_verification(
         validation=val_result,
         security_checks=raw_checks,
         category_mismatch=not category_match,
+        aadhaar_qr=aadhaar_qr_result,
     )
 
-    # Hard Gate overrides for presentation attacks or no-face
+    # Hard Gate overrides for presentation attacks, document type, and missing
+    # live biometric evidence. VISA is the only document category for which a
+    # selfie is intentionally not required.
     if not category_match:
         verdict = "REJECTED"
     elif presentation_attack_detected:
         verdict = "FAKE"
+    elif doc_type != "VISA" and not selfie_full_path:
+        risk_score = max(risk_score, 66)
+        risk_level = get_risk_level(risk_score)
+        if "FACE_VERIFICATION_UNAVAILABLE" not in risk_factors:
+            risk_factors.append("FACE_VERIFICATION_UNAVAILABLE")
+        verdict = "REJECTED"
     elif biometric_result.status == "REJECTED" and verdict == "GENUINE":
         verdict = "SUSPICIOUS"
 
@@ -395,12 +430,15 @@ async def run_verification(
         category_mismatch=not category_match,
         selected_doc_type=doc_type,
         detected_doc_type=mapped_detected,
+        aadhaar_qr=aadhaar_qr_result,
     )
 
     if not category_match:
         verdict_reason = f"REJECTED: DOCUMENT TYPE MISMATCH: Selected {doc_type} but detected {mapped_detected}"
     elif presentation_attack_detected:
         verdict_reason = f"{verdict}: Presentation attack detected ({biometric_result.presentation_attack.details})"
+    elif doc_type != "VISA" and not selfie_full_path:
+        verdict_reason = "REJECTED: Live selfie is required for non-VISA document verification"
 
     # 11. Calculate processing time
     processing_time_ms = int((time.time() - start_time) * 1000)
@@ -449,16 +487,26 @@ async def run_verification(
     await db.commit()
     await db.refresh(verification)
 
-    # 13. Append to tamper-evident SHA-256 audit log
+    # 13. Append to tamper-evident SHA-256 audit log (with safe metadata)
     audit_verdict = VERDICT_TO_AUDIT_MAP.get(verdict, "ERROR")
+    audit_record_payload = {
+        "document_id": f"CASE-26188-{verification.id:03d}",
+        "document_type": doc_type,
+        "verdict": audit_verdict,
+        "tampering_score": int(tampering_result.score),
+        "face_match_score": int(face_match_score) if face_match_score is not None else 0,
+        "timestamp": datetime.now(timezone.utc).isoformat(),
+        "officer": officer_email,
+        "checkpoint": checkpoint_location,
+    }
+    if aadhaar_qr_result:
+        audit_record_payload["qr_detected"] = aadhaar_qr_result.detected
+        audit_record_payload["qr_verification_status"] = aadhaar_qr_result.verification_status
+        audit_record_payload["qr_signature_valid"] = aadhaar_qr_result.signature_valid
+        audit_record_payload["qr_mismatches_count"] = len(aadhaar_qr_result.mismatches)
+
     try:
-        log_verification({
-            "document_id": f"CASE-26188-{verification.id:03d}",
-            "verdict": audit_verdict,
-            "tampering_score": int(tampering_result.score),
-            "face_match_score": int(face_match_score) if face_match_score is not None else 0,
-            "timestamp": datetime.now(timezone.utc).isoformat(),
-        })
+        log_verification(audit_record_payload)
     except Exception as log_err:
         logger.warning(f"Failed to record audit log: {log_err}")
 
@@ -517,6 +565,7 @@ async def run_verification(
         reason=verdict_reason,
         security_checks=security_checks,
         identity_links=identity_links,
+        aadhaar_qr=aadhaar_qr_result,
         processing_time_ms=processing_time_ms,
         case_number=f"CASE-26188-{verification.id:03d}",
         checkpoint_location=checkpoint_location,
@@ -545,8 +594,6 @@ async def get_verification_history(
     date_from: Optional[str] = None,
     date_to: Optional[str] = None,
 ) -> Tuple[List[Verification], int]:
-    from sqlalchemy import or_
-
     query = select(Verification).order_by(Verification.timestamp.desc())
 
     if verdict:
@@ -558,6 +605,7 @@ async def get_verification_history(
     if officer_email:
         query = query.where(Verification.officer_email == officer_email)
 
+    conditions = []
     if search_query:
         sq = f"%{search_query.strip()}%"
         # Check if searching for numeric ID or case number
@@ -580,7 +628,6 @@ async def get_verification_history(
 
     if date_from:
         try:
-            from datetime import datetime
             dt_from = datetime.fromisoformat(date_from)
             query = query.where(Verification.timestamp >= dt_from)
         except ValueError:
@@ -588,7 +635,6 @@ async def get_verification_history(
 
     if date_to:
         try:
-            from datetime import datetime, timedelta
             dt_to = datetime.fromisoformat(date_to) + timedelta(days=1)
             query = query.where(Verification.timestamp < dt_to)
         except ValueError:
@@ -604,24 +650,21 @@ async def get_verification_history(
         count_query = count_query.where(Verification.checkpoint_location == checkpoint_location)
     if officer_email:
         count_query = count_query.where(Verification.officer_email == officer_email)
-    if search_query:
+    if search_query and conditions:
         count_query = count_query.where(or_(*conditions))
     if date_from:
         try:
-            from datetime import datetime
             dt_from = datetime.fromisoformat(date_from)
             count_query = count_query.where(Verification.timestamp >= dt_from)
         except ValueError:
             pass
     if date_to:
         try:
-            from datetime import datetime, timedelta
             dt_to = datetime.fromisoformat(date_to) + timedelta(days=1)
             count_query = count_query.where(Verification.timestamp < dt_to)
         except ValueError:
             pass
 
-    from sqlalchemy import func
     count_query = select(func.count()).select_from(count_query.subquery())
     total_result = await db.execute(count_query)
     total = total_result.scalar() or 0
@@ -638,10 +681,6 @@ async def get_verification_stats(
     date_from: Optional[str] = None,
     date_to: Optional[str] = None,
 ) -> dict:
-    from sqlalchemy import func, case
-    from datetime import datetime, timedelta
-    from app.models import Alert
-
     # Verdict stats
     query_verdict = select(Verification.verdict, func.count(Verification.id)).group_by(Verification.verdict)
     # Document type stats
@@ -691,7 +730,7 @@ async def get_verification_stats(
     high_risk_recs = int(agg_row[2] or 0) if agg_row else 0
 
     # Daily volume calculation for past 7 days
-    now = datetime.utcnow()
+    now = datetime.now(timezone.utc)
     daily_volume = []
     days_labels = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"]
     for i in range(6, -1, -1):

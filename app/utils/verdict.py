@@ -2,12 +2,15 @@
 Verdict & Risk Score Computation Module
 
 Primary output: risk_score (0-100) — weighted combination of tampering,
-face match, and validation issues.
+face match, validation issues, and Aadhaar Secure QR cryptographic signals.
 
 Verdict is a label derived from risk_score PLUS hard gates:
 - Any failed validation → cannot be GENUINE
 - face_match_score < 50 → FAKE
 - tampering_score > 70 → FAKE
+- Aadhaar QR signature invalid → FAKE (Hard Gate)
+- Aadhaar QR / OCR demographic mismatch → FAKE (Critical Integrity Hard Gate)
+- Aadhaar QR crypto unavailable → cannot be GENUINE (SUSPICIOUS)
 - risk_score 0-30 + all gates clear → GENUINE
 - risk_score 31-65 → SUSPICIOUS
 - risk_score > 65 → FAKE
@@ -17,7 +20,7 @@ Never defaults to GENUINE.
 
 from typing import Optional, List, Dict, Any
 from app.config import get_settings
-from app.schemas import ValidationResult
+from app.schemas import ValidationResult, AadhaarQRResult
 
 
 def compute_risk_score(
@@ -29,14 +32,16 @@ def compute_risk_score(
     category_mismatch: bool = False,
     is_low_quality: bool = False,
     is_expired: bool = False,
+    aadhaar_qr: Optional[AadhaarQRResult] = None,
 ) -> int:
     """
     Compute the primary risk score (0-100) as a weighted multi-factor composite.
 
     Guarantees:
-    - Low risk (0-30) for clean documents with high face match and valid category.
+    - Low risk (0-30) for clean documents with high face match, valid category, and verified QR.
     - Face match score below rejection threshold (< 50) guarantees at least HIGH RISK (> 65).
     - Category / Document Type Mismatch produces at least HIGH RISK (>= 75).
+    - Aadhaar QR invalid signature or QR/OCR mismatch guarantees at least HIGH RISK (>= 80).
     - Tampering, validation, liveness, and presentation attack contribute coherently.
     - Expired document adds hard penalty ensuring it cannot produce low risk.
     - Risk score is clamped to [0, 100].
@@ -77,7 +82,7 @@ def compute_risk_score(
         30.0,
     )
 
-    # 4. Biometric Spoof / Presentation Attack / Category Mismatch / Low Quality / Expiry Penalties
+    # 4. Biometric Spoof / Presentation Attack / Category Mismatch / Low Quality / Expiry / Aadhaar Penalties
     bio_penalty = 0.0
     if presentation_attack_detected:
         bio_penalty += 50.0
@@ -93,9 +98,19 @@ def compute_risk_score(
     if is_low_quality:
         bio_penalty += 10.0
 
-    risk = tampering_component + face_component + validation_component + bio_penalty
+    # 5. Aadhaar QR Cryptographic & Integrity Signals
+    aadhaar_penalty = 0.0
+    if aadhaar_qr:
+        if aadhaar_qr.signature_valid is False:
+            aadhaar_penalty += 75.0
+        elif aadhaar_qr.verification_status == "CRITICAL_INTEGRITY_MISMATCH":
+            aadhaar_penalty += 70.0
+        elif aadhaar_qr.detected and aadhaar_qr.signature_valid is None:
+            aadhaar_penalty += 20.0
 
-    # Ensure face mismatch < 50 alone guarantees at least HIGH RISK
+    risk = tampering_component + face_component + validation_component + bio_penalty + aadhaar_penalty
+
+    # Hard minimums for critical failure conditions
     if face_match_score is not None and face_match_score < settings.face_match_fake_threshold:
         risk = max(risk, face_component)
 
@@ -104,6 +119,12 @@ def compute_risk_score(
 
     if is_expired:
         risk = max(risk, 45.0)
+
+    if aadhaar_qr:
+        if aadhaar_qr.signature_valid is False:
+            risk = max(risk, 80.0)
+        elif aadhaar_qr.verification_status == "CRITICAL_INTEGRITY_MISMATCH":
+            risk = max(risk, 80.0)
 
     return max(0, min(100, int(round(risk))))
 
@@ -126,6 +147,7 @@ def compute_risk_factors(
     face_obstructed: bool = False,
     category_mismatch: bool = False,
     is_low_quality: bool = False,
+    aadhaar_qr: Optional[AadhaarQRResult] = None,
 ) -> List[str]:
     """Compile discrete risk factor codes for forensic screening."""
     factors: List[str] = []
@@ -157,6 +179,14 @@ def compute_risk_factors(
         if any("BLACKLIST" in i.upper() for i in validation.issues):
             factors.append("WATCHLIST_HIT")
 
+    if aadhaar_qr:
+        if aadhaar_qr.signature_valid is False:
+            factors.append("AADHAAR_SIGNATURE_INVALID")
+        if aadhaar_qr.verification_status == "CRITICAL_INTEGRITY_MISMATCH":
+            factors.append("AADHAAR_QR_OCR_MISMATCH")
+        if aadhaar_qr.detected and aadhaar_qr.signature_valid is None:
+            factors.append("AADHAAR_CRYPTO_UNAVAILABLE")
+
     return list(dict.fromkeys(factors))
 
 
@@ -167,6 +197,7 @@ def compute_verdict(
     validation: Optional[ValidationResult] = None,
     security_checks: Optional[List[Dict[str, Any]]] = None,
     category_mismatch: bool = False,
+    aadhaar_qr: Optional[AadhaarQRResult] = None,
 ) -> str:
     """
     Compute final verdict from risk_score + hard gates.
@@ -175,8 +206,10 @@ def compute_verdict(
     1. Category / Document Type Mismatch → REJECTED
     2. tampering_score > 70 → FAKE
     3. face_match_score < 50 → FAKE
-    4. Any failed validation check → cannot be GENUINE
-    5. Any failed security check → FAKE; any suspicious → SUSPICIOUS
+    4. Aadhaar QR Signature Invalid → FAKE
+    5. Aadhaar QR / OCR Critical Integrity Mismatch → FAKE
+    6. Any failed validation check → cannot be GENUINE
+    7. Any failed security check → FAKE; any suspicious → SUSPICIOUS
 
     Risk-score thresholds (when no hard gate trips):
     - 0-30 → GENUINE
@@ -201,6 +234,13 @@ def compute_verdict(
     if face_match_score is not None and face_match_score < settings.face_match_fake_threshold:
         return "FAKE"
 
+    # Hard gate 2.5: Aadhaar QR Cryptographic Hard Gates
+    if aadhaar_qr:
+        if aadhaar_qr.signature_valid is False:
+            return "FAKE"
+        if aadhaar_qr.verification_status == "CRITICAL_INTEGRITY_MISMATCH":
+            return "FAKE"
+
     # Hard gate 3: Validation failures block GENUINE
     validation_blocks_genuine = False
     if validation:
@@ -210,6 +250,10 @@ def compute_verdict(
             validation_blocks_genuine = True
         if any("BLACKLIST" in issue.upper() for issue in validation.issues):
             return "FAKE"  # Blacklist hit is always FAKE
+
+    # Aadhaar QR unverified or inconclusive blocks GENUINE
+    if aadhaar_qr and aadhaar_qr.detected and aadhaar_qr.signature_valid is None:
+        validation_blocks_genuine = True
 
     # Hard gate 4: Security check failures
     has_failed_check = False
@@ -255,11 +299,13 @@ def generate_security_checks(
     face_match_score: Optional[int] = None,
     ocr_confidence: Optional[Dict[str, float]] = None,
     validation: Optional[ValidationResult] = None,
+    aadhaar_qr: Optional[AadhaarQRResult] = None,
+    doc_type: Optional[str] = None,
 ) -> List[Dict[str, Any]]:
-    """Generate the 4 core forensic security check items for a document."""
+    """Generate the core forensic security check items for a document."""
     checks = []
 
-    # 1. ICAO MRZ Checksum Parity
+    # 1. ICAO MRZ Checksum Parity (for PASSPORT/VISA or MRZ-enabled documents)
     if validation and validation.mrz_valid is not None:
         mrz_status = "passed" if validation.mrz_valid else "failed"
         mrz_score = 100 if validation.mrz_valid else 15
@@ -344,6 +390,38 @@ def generate_security_checks(
         ),
     })
 
+    # 5. Aadhaar Secure QR Cryptographic Integrity (for NATIONAL_ID)
+    if doc_type == "NATIONAL_ID" or aadhaar_qr is not None:
+        if aadhaar_qr and aadhaar_qr.signature_valid is True and aadhaar_qr.verification_status == "VERIFIED_NO_MISMATCH":
+            qr_status = "passed"
+            qr_score = 100
+            qr_desc = "UIDAI 2048-bit RSA digital signature verified. Signed demographic data matches OCR printed data."
+        elif aadhaar_qr and (aadhaar_qr.signature_valid is False or aadhaar_qr.verification_status == "CRITICAL_INTEGRITY_MISMATCH"):
+            qr_status = "failed"
+            qr_score = 0
+            qr_desc = (
+                "Aadhaar QR signature validation failed or critical demographic mismatch with printed document."
+                if aadhaar_qr.signature_valid is False
+                else f"Integrity failure: {'; '.join(aadhaar_qr.mismatches)}"
+            )
+        elif aadhaar_qr and aadhaar_qr.detected:
+            qr_status = "suspicious"
+            qr_score = 45
+            qr_desc = aadhaar_qr.message or "Aadhaar QR detected but cryptographic verification is unverified or inconclusive."
+        else:
+            qr_status = "passed" if tampering_score < 40 else "suspicious"
+            qr_score = 75 if qr_status == "passed" else 40
+            qr_desc = "No Secure QR detected on physical card specimen."
+
+        checks.append({
+            "id": "sc-5",
+            "name": "Aadhaar Secure QR Cryptographic Integrity",
+            "category": "crypto",
+            "status": qr_status,
+            "score": qr_score,
+            "description": qr_desc,
+        })
+
     return checks
 
 
@@ -357,6 +435,7 @@ def get_verdict_reason(
     category_mismatch: bool = False,
     selected_doc_type: Optional[str] = None,
     detected_doc_type: Optional[str] = None,
+    aadhaar_qr: Optional[AadhaarQRResult] = None,
 ) -> str:
     """Get human-readable explanation of the verdict decision."""
     settings = get_settings()
@@ -378,6 +457,17 @@ def get_verdict_reason(
             reasons.append("DOCUMENT TYPE MISMATCH: Selected document type does not match detected document")
 
     reasons.append(f"Risk score: {risk_score}/100")
+
+    # Aadhaar QR reasons
+    if aadhaar_qr:
+        if aadhaar_qr.signature_valid is False:
+            reasons.append("Aadhaar digital signature verification FAILED (tampered/forged QR)")
+        elif aadhaar_qr.verification_status == "CRITICAL_INTEGRITY_MISMATCH":
+            reasons.append(f"CRITICAL INTEGRITY MISMATCH: {'; '.join(aadhaar_qr.mismatches)}")
+        elif aadhaar_qr.signature_valid is True and aadhaar_qr.verification_status == "VERIFIED_NO_MISMATCH":
+            reasons.append("Aadhaar Secure QR cryptographically verified with zero mismatch")
+        elif aadhaar_qr.detected and aadhaar_qr.signature_valid is None:
+            reasons.append(f"Aadhaar QR: {aadhaar_qr.message or 'Verification unverified/inconclusive'}")
 
     if tampering_score > settings.tampering_fake_threshold:
         reasons.append(f"Severe tampering ({tampering_score} > {settings.tampering_fake_threshold})")

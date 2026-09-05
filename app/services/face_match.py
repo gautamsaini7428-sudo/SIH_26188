@@ -223,7 +223,12 @@ def analyze_image_quality(img_bgr: np.ndarray, facial_area: Optional[Dict[str, A
             details=details_str,
         )
     except Exception as e:
-        return QualityResult(status="GOOD", score=0.8, details=f"Quality check completed with default metric ({e})")
+        logger.warning("Image quality evaluation failed: %s", e)
+        return QualityResult(
+            status="LOW_QUALITY",
+            score=0.0,
+            details=f"Image quality evaluation failed: {e}",
+        )
 
 
 def analyze_liveness_and_presentation_attack(img_bgr: np.ndarray, facial_area: Optional[Dict[str, Any]] = None) -> Tuple[LivenessResult, PresentationAttackResult]:
@@ -355,13 +360,13 @@ def evaluate_biometrics_sync(id_image_path: str, selfie_path: Optional[str]) -> 
     """
     if not selfie_path:
         return BiometricResult(
-            face_detected=True,
-            face_count=1,
-            quality=QualityResult(status="GOOD", score=1.0, details="Not applicable (no selfie required)"),
-            liveness=LivenessResult(status="PASS", score=1.0, details="Skipped for document-only verification"),
+            face_detected=False,
+            face_count=0,
+            quality=QualityResult(status="LOW_QUALITY", score=0.0, details="No live selfie was provided"),
+            liveness=LivenessResult(status="INCONCLUSIVE", score=0.0, details="Live selfie is required for this verification"),
             presentation_attack=PresentationAttackResult(detected=False, score=0.0, type=None, details="Skipped"),
-            face_match=FaceMatchResult(status="SKIPPED", score=None, distance=None, details="Facial biometric matching skipped"),
-            status="NOT_APPLICABLE",
+            face_match=FaceMatchResult(status="SKIPPED", score=None, distance=None, details="No live selfie was provided"),
+            status="RETRY",
         )
 
     selfie_bgr, err = _secure_load_and_normalize(selfie_path)

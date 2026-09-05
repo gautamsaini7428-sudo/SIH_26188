@@ -9,7 +9,7 @@ import { AnalyticsCharts } from './AnalyticsCharts'
 import { CaseDetailDialog } from './CaseDetailDialog'
 import { exportRecordsToCSV } from './reportingData'
 import type { VerificationRecord, AuditChainVerifyResult, StatsResponse } from '../../types'
-import { fetchAuditLog, verifyAuditChainIntegrity, fetchVerificationHistory, fetchStats } from '../../services/api'
+import { verifyAuditChainIntegrity, fetchVerificationHistory, fetchStats } from '../../services/api'
 import { soundFX } from '../../utils/audio'
 
 export const SupervisorConsole: React.FC = () => {
@@ -52,40 +52,10 @@ export const SupervisorConsole: React.FC = () => {
         setRecords(mappedRecords)
         setIsLiveChainLoaded(true)
       } else {
-        // Check audit ledger fallback if verifications table is empty
-        const liveEntries = await fetchAuditLog()
-        if (liveEntries && liveEntries.length > 0) {
-          const mappedRecords: VerificationRecord[] = liveEntries.map((entry) => {
-            const rec = entry.record
-            let v: 'GENUINE' | 'SUSPICIOUS' | 'FAKE' | 'REJECTED' = 'GENUINE'
-            if (rec.verdict === 'VERIFIED') v = 'GENUINE'
-            else if (rec.verdict === 'SUSPECTED') v = 'SUSPICIOUS'
-            else if (rec.verdict === 'REJECTED') v = 'REJECTED'
-            else v = 'FAKE'
-
-            const risk = Math.round(rec.tampering_score * 0.4 + (100 - rec.face_match_score) * 0.3)
-
-            return {
-              id: `audit-${entry.index}-${rec.document_id}`,
-              caseNumber: rec.document_id,
-              date: rec.timestamp || entry.timestamp,
-              subjectName: rec.document_id,
-              documentType: 'IDENTITY_DOC',
-              checkpointLocation: 'Central Command (Immutable Ledger)',
-              officerEmail: `Block #${entry.index} [${entry.hash.substring(0, 8)}...]`,
-              verdict: v,
-              tamperingScore: rec.tampering_score,
-              faceMatchScore: rec.face_match_score,
-              riskScore: Math.min(100, Math.max(0, risk)),
-              processingMs: 850,
-              examiner: `SHA256:${entry.hash.substring(0, 10)}`,
-            }
-          })
-          setRecords(mappedRecords.reverse())
-          setIsLiveChainLoaded(true)
-        } else {
-          setRecords([])
-        }
+        // The audit ledger does not contain the complete verification record.
+        // Do not fabricate case fields or derived risk values from it.
+        setRecords([])
+        setIsLiveChainLoaded(false)
       }
 
       // 2. Fetch live stats
