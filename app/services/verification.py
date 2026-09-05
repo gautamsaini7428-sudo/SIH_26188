@@ -296,7 +296,8 @@ async def run_verification(
         "CERTIFICATE": "CERTIFICATE",
     }
     mapped_detected = type_alias_map.get(detected_doc_type, detected_doc_type)
-    category_match = bool(mapped_detected == "UNKNOWN" or mapped_detected == doc_type)
+    # An unknown classifier result is not proof that the selected category is correct.
+    category_match = bool(mapped_detected == doc_type)
 
     # 5. Standalone Document Validation Module (Format, Expiry, MRZ Checksum, Category Match, Blacklist)
     val_result = validate_document(
