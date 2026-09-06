@@ -15,7 +15,6 @@ interface DocumentIntakeProps {
   onFileSelect: (file: File) => void
   onClearDocument: () => void
   onProceedToNextStep: () => void
-  onRunStage1Only?: () => void
 }
 
 const DOCUMENT_TYPES: { type: DocumentType; label: string; sub: string }[] = [
@@ -34,7 +33,6 @@ export const DocumentIntake: React.FC<DocumentIntakeProps> = ({
   onFileSelect,
   onClearDocument,
   onProceedToNextStep,
-  onRunStage1Only,
 }) => {
   const [isDragOver, setIsDragOver] = useState(false)
   const [errorMessage, setErrorMessage] = useState<string | null>(null)
@@ -91,17 +89,17 @@ export const DocumentIntake: React.FC<DocumentIntakeProps> = ({
     <div className="space-y-6">
       {/* Page Header */}
       <div className="space-y-1">
-        <h2 className="text-2xl sm:text-3xl font-bold text-[#27212B] tracking-tight font-editorial">
+        <h2 className="text-2xl sm:text-3xl font-bold text-[#3C467B] tracking-tight font-editorial">
           Step 1: Document Classification &amp; Specimen Deposit
         </h2>
-        <p className="text-xs sm:text-sm text-[#755B73]">
+        <p className="text-xs sm:text-sm text-[#50589C]">
           Select the document category, then deposit the physical or scanned specimen into the border case file.
         </p>
       </div>
 
       {/* Clean Sentence-Case Section Heading */}
       <div className="space-y-2">
-        <label className="text-xs font-semibold text-[#27212B] block">
+        <label className="text-xs font-semibold text-[#3C467B] block">
           Document Category
         </label>
         <Tabs
@@ -112,18 +110,18 @@ export const DocumentIntake: React.FC<DocumentIntakeProps> = ({
           }}
           className="w-full"
         >
-          <TabsList className="w-full grid grid-cols-2 sm:grid-cols-5 h-auto p-1.5 gap-1.5 bg-[#FFFFFF] border border-[#E5DDD8] rounded-xl shadow-xs">
+          <TabsList className="w-full grid grid-cols-2 sm:grid-cols-5 h-auto p-1.5 gap-1.5 bg-[#FFFFFF] border border-[#DDE4FF] rounded-xl shadow-xs">
             {DOCUMENT_TYPES.map((t) => (
               <TabsTrigger
                 key={t.type}
                 value={t.type}
-                className="flex-col items-start py-2.5 px-3 text-left text-[#755B73] bg-transparent data-[state=active]:bg-[#A7F3D0] data-[state=active]:text-[#0B2925] data-[state=active]:shadow-2xs transition-all rounded-lg"
+                className="flex-col items-start py-2.5 px-3 text-left text-[#50589C] bg-transparent data-[state=active]:bg-[#EAF0FF] data-[state=active]:text-[#3C467B] data-[state=active]:shadow-2xs transition-all rounded-lg"
               >
                 <div className="flex items-center justify-between w-full font-semibold text-xs">
                   <span>{t.label}</span>
-                  {selectedDocumentType === t.type && <FileCheck className="w-3.5 h-3.5 text-[#0B2925]" />}
+                  {selectedDocumentType === t.type && <FileCheck className="w-3.5 h-3.5 text-[#3C467B]" />}
                 </div>
-                <span className="text-[10px] text-[#755B73] mt-0.5 font-normal">{t.sub}</span>
+                <span className="text-[10px] text-[#50589C] mt-0.5 font-normal">{t.sub}</span>
               </TabsTrigger>
             ))}
           </TabsList>
@@ -137,28 +135,28 @@ export const DocumentIntake: React.FC<DocumentIntakeProps> = ({
           onDragLeave={handleDragLeave}
           onDrop={handleDrop}
           onClick={() => fileInputRef.current?.click()}
-          className={`cursor-pointer border-dashed p-8 sm:p-12 text-center transition-all bg-[#FFFFFF] border-[#E5DDD8] ${
-            isDragOver ? 'border-[#0B2925] bg-[#FCFAF8]' : 'hover:border-[#0B2925]/50 hover:bg-[#FCFAF8]'
+          className={`cursor-pointer border-dashed p-8 sm:p-12 text-center transition-all bg-[#FFFFFF] border-[#DDE4FF] ${
+            isDragOver ? 'border-[#3C467B] bg-[#F3F6FF]' : 'hover:border-[#636CCB]/60 hover:bg-[#F3F6FF]'
           }`}
         >
           <div className="max-w-md mx-auto space-y-4">
-            <div className="w-12 h-12 mx-auto rounded-xl bg-[#F8F5F3] border border-[#E5DDD8] flex items-center justify-center text-[#0B2925] shadow-xs">
-              <Upload className="w-6 h-6 text-[#0B2925]" />
+            <div className="w-12 h-12 mx-auto rounded-xl bg-[#EEF3FF] border border-[#DDE4FF] flex items-center justify-center text-[#3C467B] shadow-xs">
+              <Upload className="w-6 h-6 text-[#3C467B]" />
             </div>
 
             <div>
-              <h3 className="text-lg font-bold text-[#27212B]">
+              <h3 className="text-lg font-bold text-[#3C467B]">
                 Deposit {selectedDocumentType.replace('_', ' ')} Specimen
               </h3>
-              <p className="text-xs text-[#755B73] mt-1">
+              <p className="text-xs text-[#50589C] mt-1">
                 Drag and drop a physical or scanned document file here, or{' '}
-                <span className="text-[#0B2925] font-semibold underline underline-offset-2">
+                <span className="text-[#3C467B] font-semibold underline underline-offset-2">
                   browse local archives
                 </span>
               </p>
             </div>
 
-            <div className="text-[11px] text-[#755B73] font-mono">
+            <div className="text-[11px] text-[#50589C] font-mono">
               Accepted archival formats: High-Resolution JPG, PNG, WEBP, or PDF
             </div>
           </div>
@@ -203,22 +201,8 @@ export const DocumentIntake: React.FC<DocumentIntakeProps> = ({
         </div>
       )}
 
-      {/* STEP 1 CTAS: Stage 1 Authenticity vs Step 2 Biometrics */}
-      <div className="pt-2 flex flex-col sm:flex-row items-center justify-between gap-3">
-        {onRunStage1Only && documentReady && selectedDocumentType !== 'VISA' && (
-          <Button
-            type="button"
-            variant="outline"
-            onClick={() => {
-              soundFX.paperSlide()
-              onRunStage1Only()
-            }}
-            className="border-[#0B2925]/30 text-[#0B2925] hover:bg-[#A7F3D0]/20 font-semibold text-xs"
-          >
-            Verify Stage 1: Document Authenticity Only
-          </Button>
-        )}
-        <div className="flex-1" />
+      {/* STEP 1 NEXT CTA */}
+      <div className="pt-2 flex justify-end">
         <Button
           onClick={() => {
             soundFX.paperSlide()
@@ -226,7 +210,7 @@ export const DocumentIntake: React.FC<DocumentIntakeProps> = ({
           }}
           disabled={!documentReady}
           size="lg"
-          className="gap-2 bg-[#0B2925] hover:bg-[#133D37] text-[#F8F5F3] font-bold cursor-pointer w-full sm:w-auto"
+          className="gap-2 bg-[#3C467B] hover:bg-[#50589C] text-[#ffffff] font-bold cursor-pointer"
         >
           <span>
             {selectedDocumentType === 'VISA'

@@ -156,7 +156,7 @@ export const SupervisorConsole: React.FC = () => {
               Supervisor Review &amp; Audit Console
             </h2>
             {isLiveChainLoaded && (
-              <Badge variant="outline" className="text-[10px] bg-[#A7F3D0]/30 text-[#0B2925] border-[#0B2925]/30">
+              <Badge variant="outline" className="text-[10px] bg-[#EAF0FF] text-[#3C467B] border-[#636CCB]/30">
                 <LinkIcon className="w-3 h-3 mr-1 inline" />
                 Live SHA-256 Chain
               </Badge>
@@ -171,7 +171,7 @@ export const SupervisorConsole: React.FC = () => {
           <Button
             onClick={handleVerifyChain}
             disabled={isVerifyingChain}
-            className="gap-2 bg-[#0B2925] hover:bg-[#133D37] text-[#F8F5F3] font-bold border border-[#A7F3D0]/40 shadow-xs cursor-pointer"
+            className="gap-2 bg-[#3C467B] hover:bg-[#50589C] text-[#F8F5F3] font-bold border border-[#6E8CFB]/40 shadow-xs cursor-pointer"
           >
             {isVerifyingChain ? (
               <RefreshCw className="w-4 h-4 animate-spin" />
@@ -184,7 +184,7 @@ export const SupervisorConsole: React.FC = () => {
           <Button
             onClick={handleExport}
             variant="outline"
-            className="gap-2 border-[#E5DDD8] text-[#27212B] hover:bg-[#F8F5F3] font-semibold cursor-pointer"
+            className="gap-2 border-[#DDE4FF] text-[#1E2550] hover:bg-[#F3F6FF] font-semibold cursor-pointer"
           >
             <Download className="w-4 h-4" />
             <span>Export CSV</span>
@@ -263,31 +263,31 @@ export const SupervisorConsole: React.FC = () => {
           <span className="text-[10px] text-[#755B73] font-medium">All Border Checkpoints</span>
         </Card>
 
-        <Card className="border-[#0B2925]/20 bg-[#A7F3D0]/25 p-4 space-y-1 shadow-xs">
+        <Card className="border-[#DDE4FF] bg-[#EAF0FF] p-4 space-y-1 shadow-xs">
           <div className="flex items-center justify-between">
-            <span className="text-xs font-semibold text-[#0B2925]">Genuine Passed</span>
-            <CheckCircle2 className="w-4 h-4 text-[#0B2925]" />
+            <span className="text-xs font-semibold text-[#166534]">Genuine Passed</span>
+            <CheckCircle2 className="w-4 h-4 text-[#16A34A]" />
           </div>
-          <div className="text-2xl sm:text-3xl font-bold font-mono text-[#0B2925]">{counts.GENUINE}</div>
-          <span className="text-[10px] text-[#0B2925]/80 font-medium">Clearance Issued</span>
+          <div className="text-2xl sm:text-3xl font-bold font-mono text-[#16A34A]">{counts.GENUINE}</div>
+          <span className="text-[10px] text-[#166534]/80 font-medium">Clearance Issued</span>
         </Card>
 
-        <Card className="border-[#755B73]/30 bg-[#755B73]/10 p-4 space-y-1 shadow-xs">
+        <Card className="border-[#F5E6A9] bg-[#FEF3C7] p-4 space-y-1 shadow-xs">
           <div className="flex items-center justify-between">
-            <span className="text-xs font-semibold text-[#755B73]">Suspicious Flagged</span>
-            <AlertTriangle className="w-4 h-4 text-[#755B73]" />
+            <span className="text-xs font-semibold text-[#92400E]">Suspicious Flagged</span>
+            <AlertTriangle className="w-4 h-4 text-[#D97706]" />
           </div>
-          <div className="text-2xl sm:text-3xl font-bold font-mono text-[#755B73]">{counts.SUSPICIOUS}</div>
-          <span className="text-[10px] text-[#755B73]/90 font-medium">Manual Secondary Review</span>
+          <div className="text-2xl sm:text-3xl font-bold font-mono text-[#D97706]">{counts.SUSPICIOUS}</div>
+          <span className="text-[10px] text-[#92400E]/90 font-medium">Manual Secondary Review</span>
         </Card>
 
-        <Card className="border-[#DC2626]/30 bg-[#DC2626]/10 p-4 space-y-1 shadow-xs">
+        <Card className="border-[#F7CFCF] bg-[#FEE2E2] p-4 space-y-1 shadow-xs">
           <div className="flex items-center justify-between">
-            <span className="text-xs font-semibold text-[#DC2626]">Fake / Rejected</span>
+            <span className="text-xs font-semibold text-[#991B1B]">Fake / Rejected</span>
             <XCircle className="w-4 h-4 text-[#DC2626]" />
           </div>
           <div className="text-2xl sm:text-3xl font-bold font-mono text-[#DC2626]">{counts.FAKE + counts.REJECTED}</div>
-          <span className="text-[10px] text-[#DC2626]/90 font-medium">Entry Denied / Apprehended</span>
+          <span className="text-[10px] text-[#991B1B]/90 font-medium">Entry Denied / Apprehended</span>
         </Card>
       </div>
 
@@ -304,12 +304,12 @@ export const SupervisorConsole: React.FC = () => {
               placeholder="Search by name, case ID, officer..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="pl-9 text-xs bg-[#FFFFFF] dark:bg-[#0B2925] border-[#E5DDD8] dark:border-[#A7F3D0]/20 text-[#27212B] dark:text-[#F8F5F3]"
+              className="pl-9 text-xs bg-[#FFFFFF] border-[#DDE4FF] text-[#1E2550]"
             />
           </div>
 
           {/* Filter Pills */}
-          <div className="flex flex-wrap items-center gap-1.5 bg-[#FFFFFF] dark:bg-[#0B2925] p-1 rounded-xl border border-[#E5DDD8] dark:border-[#A7F3D0]/20">
+          <div className="flex flex-wrap items-center gap-1.5 bg-[#FFFFFF] p-1 rounded-xl border border-[#DDE4FF]">
             {(['ALL', 'GENUINE', 'SUSPICIOUS', 'FAKE', 'REJECTED'] as const).map((filter) => (
               <Button
                 key={filter}
@@ -321,8 +321,8 @@ export const SupervisorConsole: React.FC = () => {
                 }}
                 className={`text-xs h-7 px-2.5 cursor-pointer ${
                   verdictFilter === filter
-                    ? 'bg-[#0B2925] text-[#F8F5F3] dark:bg-[#A7F3D0] dark:text-[#0B2925] font-bold'
-                    : 'text-[#755B73] hover:text-[#27212B]'
+                    ? 'bg-[#3C467B] text-[#F8F5F3] font-bold'
+                    : 'text-[#50589C] hover:text-[#1E2550]'
                 }`}
               >
                 {filter === 'ALL' ? 'All Cases' : filter}
@@ -399,7 +399,7 @@ export const SupervisorConsole: React.FC = () => {
                         </Badge>
                       </TableCell>
                       <TableCell className="text-center font-mono font-bold whitespace-nowrap">
-                        <span className={r.riskScore > 65 ? 'text-[#DC2626]' : r.riskScore > 30 ? 'text-[#755B73]' : 'text-[#0B2925]'}>
+                        <span className={r.riskScore > 65 ? 'text-[#DC2626]' : r.riskScore > 30 ? 'text-[#D97706]' : 'text-[#16A34A]'}>
                           {r.riskScore}/100
                         </span>
                       </TableCell>

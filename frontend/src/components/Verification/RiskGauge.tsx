@@ -35,12 +35,29 @@ export const RiskGauge: React.FC<RiskGaugeProps> = ({ score, verdict }) => {
   const circumference = 2 * Math.PI * radius
   const strokeDashoffset = circumference - (displayScore / 100) * circumference
 
-  const getGaugeColor = () => {
-    if (verdict === 'REJECTED') return 'stroke-destructive text-destructive'
-    if (score >= 65) return 'stroke-destructive text-destructive'
-    if (score >= 30) return 'stroke-amber-500 text-amber-500'
-    return 'stroke-emerald-500 text-emerald-500'
+  const getRiskColors = () => {
+    if (verdict === 'REJECTED' || score >= 65) {
+      return {
+        ring: 'stroke-[#DC2626]',
+        text: 'text-[#DC2626]',
+        label: 'text-[#7F1D1D]',
+      }
+    }
+    if (score >= 30) {
+      return {
+        ring: 'stroke-[#F59E0B]',
+        text: 'text-[#D97706]',
+        label: 'text-[#92400E]',
+      }
+    }
+    return {
+      ring: 'stroke-[#22C55E]',
+      text: 'text-[#16A34A]',
+      label: 'text-[#166534]',
+    }
   }
+
+  const riskColors = getRiskColors()
 
   return (
     <div className="flex flex-col items-center justify-center p-4">
@@ -59,7 +76,7 @@ export const RiskGauge: React.FC<RiskGaugeProps> = ({ score, verdict }) => {
             cx="80"
             cy="80"
             r={radius}
-            className={`fill-none ${getGaugeColor()}`}
+            className={`fill-none ${riskColors.ring}`}
             strokeWidth="12"
             strokeDasharray={circumference}
             strokeDashoffset={strokeDashoffset}
@@ -72,10 +89,10 @@ export const RiskGauge: React.FC<RiskGaugeProps> = ({ score, verdict }) => {
 
         {/* Center Score Counter */}
         <div className="absolute inset-0 flex flex-col items-center justify-center text-center">
-          <span className="text-4xl font-bold font-mono text-foreground tracking-tight">
+          <span className={`text-4xl font-bold font-mono tracking-tight ${riskColors.text}`}>
             {displayScore}
           </span>
-          <span className="text-[10px] font-mono text-muted-foreground uppercase tracking-wider font-bold">
+          <span className={`text-[10px] font-mono uppercase tracking-wider font-bold ${riskColors.label}`}>
             Risk Index / 100
           </span>
         </div>

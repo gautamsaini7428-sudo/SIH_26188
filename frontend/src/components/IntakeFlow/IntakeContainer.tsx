@@ -59,14 +59,14 @@ export const IntakeContainer: React.FC<IntakeContainerProps> = ({
           }}
           className={`px-4 sm:px-6 py-2.5 rounded-t-md font-sans text-xs flex items-center gap-2 transition-all cursor-pointer ${
             intakeStep === 'step1_document'
-              ? 'dossier-tab-active font-semibold text-[#0B2925]'
-              : 'dossier-tab-inactive hover:text-[#27212B]'
+              ? 'dossier-tab-active font-semibold text-[#3C467B]'
+              : 'dossier-tab-inactive hover:text-[#3C467B]'
           }`}
         >
           <div
             className={`w-4 h-4 rounded-full flex items-center justify-center text-[10px] font-mono ${
               isDocReady
-                ? 'bg-[#A7F3D0] text-[#0B2925] font-bold'
+                ? 'bg-[#6E8CFB] text-[#ffffff] font-bold'
                 : 'bg-[#E3DCD6] text-[#6E6571]'
             }`}
           >
@@ -87,16 +87,16 @@ export const IntakeContainer: React.FC<IntakeContainerProps> = ({
             disabled={!isDocReady}
             className={`px-4 sm:px-6 py-2.5 rounded-t-md font-sans text-xs flex items-center gap-2 transition-all ${
               intakeStep === 'step2_biometric'
-                ? 'dossier-tab-active font-semibold text-[#0B2925]'
+                ? 'dossier-tab-active font-semibold text-[#3C467B]'
                 : isDocReady
-                ? 'dossier-tab-inactive hover:text-[#27212B] cursor-pointer'
+                ? 'dossier-tab-inactive hover:text-[#3C467B] cursor-pointer'
                 : 'bg-[#F8F5F3] border border-transparent text-[#C8BEB7] cursor-not-allowed'
             }`}
           >
             <div
               className={`w-4 h-4 rounded-full flex items-center justify-center text-[10px] font-mono ${
                 isBiometricReady
-                  ? 'bg-[#A7F3D0] text-[#0B2925] font-bold'
+                  ? 'bg-[#6E8CFB] text-[#ffffff] font-bold'
                   : 'bg-[#E3DCD6] text-[#6E6571]'
               }`}
             >

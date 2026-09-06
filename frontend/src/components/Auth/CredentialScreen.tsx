@@ -24,8 +24,8 @@ const ROLE_META = {
     icon: Shield,
     label: 'Officer',
     description: 'Document intake & live verification',
-    chipBg: '#A7F3D0',
-    chipText: '#0B2925',
+    chipBg: '#EAF0FF',
+    chipText: '#3C467B',
   },
   SUPERVISOR: {
     icon: BarChart3,
@@ -293,7 +293,7 @@ export const CredentialScreen: React.FC<CredentialScreenProps> = ({
                 <Button
                   type="submit"
                   disabled={loading}
-                  className="w-full font-semibold h-10 sm:h-11 cursor-pointer bg-[#0B2925] hover:bg-[#133D37] text-[#F8F5F3] transition-all rounded-xl"
+                  className="w-full font-semibold h-10 sm:h-11 cursor-pointer bg-[#3C467B] hover:bg-[#50589C] text-[#F8F5F3] transition-all rounded-xl"
                 >
                   {loading ? 'Signing in…' : 'Sign in to Console'}
                 </Button>

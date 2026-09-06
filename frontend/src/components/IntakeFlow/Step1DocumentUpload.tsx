@@ -86,10 +86,10 @@ export const Step1DocumentUpload: React.FC<Step1DocumentUploadProps> = ({
     <div className="space-y-6">
       {/* Folder Tab Case Intake Header */}
       <div className="space-y-1">
-        <h2 className="font-editorial text-2xl sm:text-3xl font-bold text-[#0B2925]">
+        <h2 className="font-editorial text-2xl sm:text-3xl font-bold text-[#3C467B]">
           Step 1: Document Type &amp; Intake Specimen
         </h2>
-        <p className="text-xs sm:text-sm text-[#6E6571] font-sans">
+        <p className="text-xs sm:text-sm text-[#50589C] font-sans">
           Select the document category, then deposit the physical or scanned specimen into the border case file.
         </p>
       </div>
@@ -112,17 +112,17 @@ export const Step1DocumentUpload: React.FC<Step1DocumentUploadProps> = ({
                 }}
                 className={`p-3 rounded-lg border text-left transition-all cursor-pointer ${
                   isSelected
-                    ? 'border-[#0B2925] bg-[#0B2925] text-[#FFFFFF] shadow-sm'
-                    : 'border-[#E3DCD6] bg-[#FFFFFF] hover:border-[#C8BEB7] text-[#27212B] hover:bg-[#FCFAF8]'
+                    ? 'border-[#3C467B] bg-[#3C467B] text-[#FFFFFF] shadow-sm'
+                    : 'border-[#DDE4FF] bg-[#FFFFFF] hover:border-[#636CCB] text-[#3C467B] hover:bg-[#F3F6FF]'
                 }`}
               >
                 <div className="text-xs font-bold font-sans flex items-center justify-between">
                   <span>{tab.label}</span>
-                  {isSelected && <FileCheck className="w-3.5 h-3.5 text-[#A7F3D0]" />}
+                  {isSelected && <FileCheck className="w-3.5 h-3.5 text-[#EAF0FF]" />}
                 </div>
                 <div
                   className={`text-[10px] font-sans mt-0.5 ${
-                    isSelected ? 'text-[#A7F3D0]/90' : 'text-[#6E6571]'
+                    isSelected ? 'text-[#EAF0FF]/90' : 'text-[#50589C]'
                   }`}
                 >
                   {tab.sub}
@@ -142,34 +142,34 @@ export const Step1DocumentUpload: React.FC<Step1DocumentUploadProps> = ({
           onClick={() => fileInputRef.current?.click()}
           className={`relative cursor-pointer rounded-lg border transition-all duration-200 p-8 sm:p-12 text-center bg-[#FFFFFF] ${
             isDragOver
-              ? 'border-[#0B2925] bg-[#F8F5F3] ring-1 ring-[#0B2925]'
-              : 'border-[#E3DCD6] hover:border-[#C8BEB7] hover:bg-[#FCFAF8]'
+              ? 'border-[#3C467B] bg-[#F3F6FF] ring-1 ring-[#636CCB]'
+              : 'border-[#DDE4FF] hover:border-[#636CCB] hover:bg-[#F3F6FF]'
           }`}
         >
           {/* Folder Tab Notch at top */}
-          <div className="absolute -top-3.5 left-6 bg-[#F2ECE9] border-t border-l border-r border-[#E3DCD6] px-3.5 py-0.5 rounded-t text-[10px] font-sans font-medium text-[#6E6571] flex items-center gap-1.5">
-            <span className="w-1.5 h-1.5 rounded-full bg-[#A7F3D0] border border-[#0B2925]/30" />
+          <div className="absolute -top-3.5 left-6 bg-[#EEF3FF] border-t border-l border-r border-[#DDE4FF] px-3.5 py-0.5 rounded-t text-[10px] font-sans font-medium text-[#50589C] flex items-center gap-1.5">
+            <span className="w-1.5 h-1.5 rounded-full bg-[#6E8CFB] border border-[#3C467B]/30" />
             <span>Folder Tab // {selectedDocumentType} Intake</span>
           </div>
 
           <div className="max-w-md mx-auto space-y-3">
-            <div className="w-12 h-12 mx-auto rounded-lg bg-[#F8F5F3] border border-[#E3DCD6] flex items-center justify-center text-[#0B2925]">
+            <div className="w-12 h-12 mx-auto rounded-lg bg-[#EEF3FF] border border-[#DDE4FF] flex items-center justify-center text-[#3C467B]">
               <Upload className="w-5 h-5" />
             </div>
 
             <div>
-              <h3 className="font-editorial text-lg font-bold text-[#0B2925]">
+              <h3 className="font-editorial text-lg font-bold text-[#3C467B]">
                 Deposit {selectedDocumentType.replace('_', ' ')} Specimen
               </h3>
-              <p className="text-xs text-[#6E6571] font-sans mt-1">
+              <p className="text-xs text-[#50589C] font-sans mt-1">
                 Drag and drop a physical or scanned document file here, or{' '}
-                <span className="text-[#0B2925] font-semibold underline underline-offset-2">
+                <span className="text-[#3C467B] font-semibold underline underline-offset-2">
                   browse local archives
                 </span>
               </p>
             </div>
 
-            <div className="text-[11px] text-[#6E6571] font-sans pt-1">
+            <div className="text-[11px] text-[#50589C] font-sans pt-1">
               Accepted archival formats: High-Resolution JPG, PNG, WEBP, or PDF
             </div>
           </div>
@@ -223,7 +223,7 @@ export const Step1DocumentUpload: React.FC<Step1DocumentUploadProps> = ({
           disabled={!documentReady}
           className={`flex items-center gap-2 px-6 py-2.5 rounded text-xs font-sans font-medium transition-all ${
             documentReady
-              ? 'bg-[#0B2925] hover:bg-[#16433C] text-[#FFFFFF] shadow-sm cursor-pointer'
+              ? 'bg-[#3C467B] hover:bg-[#50589C] text-[#FFFFFF] shadow-sm cursor-pointer'
               : 'bg-[#E3DCD6] text-[#6E6571] cursor-not-allowed'
           }`}
         >

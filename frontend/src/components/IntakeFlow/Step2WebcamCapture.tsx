@@ -108,10 +108,10 @@ export const Step2WebcamCapture: React.FC<Step2WebcamCaptureProps> = ({
     <div className="space-y-6">
       {/* Step Header */}
       <div className="space-y-1">
-        <h2 className="font-editorial text-2xl sm:text-3xl font-bold text-[#0B2925]">
+        <h2 className="font-editorial text-2xl sm:text-3xl font-bold text-[#3C467B]">
           Step 2 of 2: Verify It&apos;s You (Biometric Capture)
         </h2>
-        <p className="text-xs sm:text-sm text-[#6E6571] font-sans">
+        <p className="text-xs sm:text-sm text-[#50589C] font-sans">
           A live facial capture is required to compare physical biometric landmarks against Exhibit A.
         </p>
       </div>
@@ -134,8 +134,8 @@ export const Step2WebcamCapture: React.FC<Step2WebcamCaptureProps> = ({
             {/* Viewfinder Oval Outline Guide */}
             {isCameraActive && (
               <div className="absolute inset-0 pointer-events-none flex items-center justify-center">
-                <div className="w-48 h-64 rounded-[50%] border-2 border-dashed border-[#FFFFFF]/80 shadow-[0_0_0_9999px_rgba(39,33,43,0.35)]" />
-                <span className="absolute bottom-6 px-3 py-1 rounded bg-[#0B2925]/80 text-[#FFFFFF] text-[11px] font-sans">
+                <div className="w-48 h-64 rounded-[50%] border-2 border-dashed border-[#EAF0FF]/80 shadow-[0_0_0_9999px_rgba(60,70,123,0.28)]" />
+                <span className="absolute bottom-6 px-3 py-1 rounded bg-[#3C467B]/85 text-[#FFFFFF] text-[11px] font-sans">
                   Align face within the frame
                 </span>
               </div>
@@ -144,20 +144,20 @@ export const Step2WebcamCapture: React.FC<Step2WebcamCaptureProps> = ({
             {/* Camera Loading or Error Fallback View */}
             {!isCameraActive && (
               <div className="text-center p-6 space-y-3 max-w-sm">
-                <div className="w-12 h-12 mx-auto rounded bg-[#F2ECE9] border border-[#E3DCD6] flex items-center justify-center text-[#0B2925]">
+                <div className="w-12 h-12 mx-auto rounded bg-[#EEF3FF] border border-[#DDE4FF] flex items-center justify-center text-[#3C467B]">
                   <Camera className="w-5 h-5" />
                 </div>
                 <div>
-                  <h4 className="font-editorial text-base font-bold text-[#0B2925]">
+                  <h4 className="font-editorial text-base font-bold text-[#3C467B]">
                     {cameraError ? 'Camera Standby / Offline' : 'Initializing Webcam...'}
                   </h4>
-                  <p className="text-xs text-[#6E6571] font-sans mt-1">
+                  <p className="text-xs text-[#50589C] font-sans mt-1">
                     {cameraError || 'Please allow browser camera permissions when prompted.'}
                   </p>
                 </div>
                 <button
                   onClick={startWebcam}
-                  className="px-3.5 py-1.5 rounded border border-[#0B2925] bg-[#FFFFFF] hover:bg-[#F2ECE9] text-[#0B2925] text-xs font-sans font-medium transition-colors cursor-pointer"
+                  className="px-3.5 py-1.5 rounded border border-[#3C467B] bg-[#FFFFFF] hover:bg-[#EEF3FF] text-[#3C467B] text-xs font-sans font-medium transition-colors cursor-pointer"
                 >
                   Retry Camera Connection
                 </button>
@@ -170,7 +170,7 @@ export const Step2WebcamCapture: React.FC<Step2WebcamCaptureProps> = ({
             <div className="flex justify-center pt-2">
               <button
                 onClick={handleCapture}
-                className="flex items-center gap-2 px-6 py-2.5 rounded bg-[#0B2925] hover:bg-[#16433C] text-[#FFFFFF] text-xs font-sans font-medium shadow-sm transition-all"
+                className="flex items-center gap-2 px-6 py-2.5 rounded bg-[#3C467B] hover:bg-[#50589C] text-[#FFFFFF] text-xs font-sans font-medium shadow-sm transition-all"
               >
                 <Camera className="w-4 h-4" />
                 <span>Capture Live Biometric Photo</span>
@@ -205,7 +205,7 @@ export const Step2WebcamCapture: React.FC<Step2WebcamCaptureProps> = ({
             soundFX.paperSlide()
             onBackToStep1()
           }}
-          className="flex items-center gap-1.5 px-4 py-2 rounded border border-[#E3DCD6] bg-[#FFFFFF] hover:bg-[#F2ECE9] text-[#27212B] text-xs font-sans transition-colors"
+          className="flex items-center gap-1.5 px-4 py-2 rounded border border-[#DDE4FF] bg-[#FFFFFF] hover:bg-[#F3F6FF] text-[#3C467B] text-xs font-sans transition-colors"
         >
           <ArrowLeft className="w-3.5 h-3.5" />
           <span>Back to Step 1</span>
@@ -219,7 +219,7 @@ export const Step2WebcamCapture: React.FC<Step2WebcamCaptureProps> = ({
           disabled={!capturedSelfieUrl}
           className={`flex items-center gap-2 px-6 py-2.5 rounded text-xs font-sans font-medium transition-all ${
             capturedSelfieUrl
-              ? 'bg-[#0B2925] hover:bg-[#16433C] text-[#FFFFFF] shadow-sm cursor-pointer'
+              ? 'bg-[#3C467B] hover:bg-[#50589C] text-[#FFFFFF] shadow-sm cursor-pointer'
               : 'bg-[#E3DCD6] text-[#6E6571] cursor-not-allowed'
           }`}
         >

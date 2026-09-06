@@ -74,31 +74,28 @@ export const AlertHistoryList: FC<AlertHistoryListProps> = ({
     }
   }
 
-  const getSeverityBadge = (severity: string) => {
+  const getSeverityBadge = (severity: string, score?: number) => {
+    const numericScore = typeof score === 'number' ? score : 0
     const s = severity.toUpperCase()
-    if (s === 'CRITICAL') {
+
+    if (numericScore >= 65 || s === 'CRITICAL') {
       return (
-        <Badge variant="destructive" className="text-[9.5px] bg-[#8A2323] text-white">
-          CRITICAL
+        <Badge variant="destructive" className="text-[9.5px] bg-[#FBDADA] text-[#8A2323] border border-[#8A2323]/30">
+          {numericScore >= 80 || s === 'CRITICAL' ? 'CRITICAL' : 'HIGH RISK'}
         </Badge>
       )
     }
-    if (s === 'HIGH') {
+
+    if (numericScore >= 35 || s === 'MEDIUM' || s === 'WARNING' || s === 'HIGH') {
       return (
-        <Badge variant="warning" className="text-[9.5px] bg-[#A25A38] text-white">
-          HIGH RISK
-        </Badge>
-      )
-    }
-    if (s === 'MEDIUM' || s === 'WARNING') {
-      return (
-        <Badge variant="warning" className="text-[9.5px] bg-[#755B73] text-white">
+        <Badge variant="warning" className="text-[9.5px] bg-[#FEF3C7] text-[#92400E] border border-[#F59E0B]/30">
           SUSPICIOUS
         </Badge>
       )
     }
+
     return (
-      <Badge variant="outline" className="text-[9.5px] bg-[#A7F3D0]/40 text-[#0B2925] border-[#0B2925]/30">
+      <Badge variant="success" className="text-[9.5px] bg-[#DCFCE7] text-[#166534] border border-[#22C55E]/30">
         LOW RISK
       </Badge>
     )
@@ -243,7 +240,7 @@ export const AlertHistoryList: FC<AlertHistoryListProps> = ({
                         <span className="font-mono text-[11px] font-bold text-[#0B2925]">
                           {alert.caseNumber}
                         </span>
-                        {getSeverityBadge(alert.severity)}
+                        {getSeverityBadge(alert.severity, alert.score)}
                         {getStatusBadge(alert.status)}
                         {alert.status === 'UNREVIEWED' && (
                           <span className="w-1.5 h-1.5 rounded-full bg-[#8A2323]" />

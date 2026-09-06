@@ -18,14 +18,14 @@ const TICKER_ITEMS = ['Hashed credentials', 'Role-scoped security', '2026 cycle 
 export const BrandPanel: React.FC = () => (
   <div
     className="w-full md:w-[44%] lg:w-[42%] flex flex-col justify-between px-7 sm:px-9 lg:px-11 py-9 lg:py-11 relative self-stretch shrink-0"
-    style={{ backgroundColor: '#0B2925' }}
+    style={{ backgroundColor: '#0f1634' }}
   >
     {/* Dot-grid texture */}
     <div
       className="absolute inset-0 pointer-events-none"
       style={{
         backgroundImage:
-          'radial-gradient(circle, rgba(167,243,208,0.08) 1px, transparent 1px)',
+          'radial-gradient(circle, rgba(110,140,251,0.09) 1px, transparent 1px)',
         backgroundSize: '24px 24px',
       }}
     />
@@ -36,15 +36,15 @@ export const BrandPanel: React.FC = () => (
         <div
           className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0"
           style={{
-            backgroundColor: 'rgba(167, 243, 208, 0.12)',
-            border: '1.5px solid rgba(167, 243, 208, 0.25)',
+            backgroundColor: 'rgba(110, 140, 251, 0.12)',
+            border: '1.5px solid rgba(110, 140, 251, 0.25)',
           }}
         >
-          <Shield className="w-5 h-5 text-[#A7F3D0]" />
+          <Shield className="w-5 h-5 text-[#DDE4FF]" />
         </div>
         <div>
           <p
-            className="text-xs font-mono font-semibold tracking-wide leading-tight text-[#A7F3D0]"
+            className="text-xs font-mono font-semibold tracking-wide leading-tight text-[#DDE4FF]"
           >
             MHA · Border Control
           </p>
@@ -59,10 +59,10 @@ export const BrandPanel: React.FC = () => (
         {/* Institutional pill badge */}
         <div>
           <span
-            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium text-[#A7F3D0]"
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium text-[#EAF0FF]"
             style={{
-              backgroundColor: 'rgba(167, 243, 208, 0.1)',
-              border: '1px solid rgba(167, 243, 208, 0.22)',
+              backgroundColor: 'rgba(110, 140, 251, 0.12)',
+              border: '1px solid rgba(110, 140, 251, 0.22)',
             }}
           >
             <ShieldCheck className="w-3.5 h-3.5" />
@@ -97,10 +97,10 @@ export const BrandPanel: React.FC = () => (
           {FEATURE_BADGES.map(({ icon: Icon, label }) => (
             <span
               key={label}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium text-[#A7F3D0]"
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium text-[#EAF0FF]"
               style={{
-                backgroundColor: 'rgba(167, 243, 208, 0.08)',
-                border: '1px solid rgba(167, 243, 208, 0.18)',
+                backgroundColor: 'rgba(110, 140, 251, 0.08)',
+                border: '1px solid rgba(110, 140, 251, 0.18)',
               }}
             >
               <Icon className="w-3.5 h-3.5" />
@@ -117,10 +117,10 @@ export const BrandPanel: React.FC = () => (
         {TICKER_ITEMS.map((item) => (
           <span
             key={item}
-            className="flex items-center gap-1.5 text-[11px] font-medium text-[#A7F3D0]/60"
+            className="flex items-center gap-1.5 text-[11px] font-medium text-[#DDE4FF]/70"
           >
             <CheckCircle2
-              className="w-3 h-3 shrink-0 text-[#A7F3D0]/60"
+              className="w-3 h-3 shrink-0 text-[#DDE4FF]/70"
             />
             {item}
           </span>

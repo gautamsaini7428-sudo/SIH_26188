@@ -76,19 +76,19 @@ const FloatingBadgeButton: React.FC<FABProps> = ({ onClick, pulse, isOpen, title
     aria-label="Open Vidyut AI Assistant"
     className="group relative flex items-center gap-3 px-3.5 py-2 rounded-full cursor-pointer transition-all duration-300 select-none shadow-2xl hover:scale-105 active:scale-95"
     style={{
-      backgroundColor: 'rgba(15, 30, 24, 0.94)',
+      backgroundColor: 'rgba(60, 70, 123, 0.96)',
       backdropFilter: 'blur(12px)',
-      border: '1px solid rgba(164, 195, 178, 0.35)',
+      border: '1px solid rgba(110, 140, 251, 0.35)',
       boxShadow: isOpen
-        ? '0 0 20px rgba(107, 144, 128, 0.45), 0 8px 32px rgba(0, 0, 0, 0.5)'
-        : '0 8px 30px rgba(0, 0, 0, 0.4), 0 0 16px rgba(107, 144, 128, 0.25)',
+        ? '0 0 20px rgba(110, 140, 251, 0.4), 0 8px 32px rgba(0, 0, 0, 0.45)'
+        : '0 8px 30px rgba(0, 0, 0, 0.35), 0 0 16px rgba(110, 140, 251, 0.25)',
     }}
   >
-    {/* Left: Full Circular Mint-Sage Smiley Avatar */}
+    {/* Left: Full Circular Indigo Avatar */}
     <div className="relative shrink-0 flex items-center justify-center">
       {isOpen ? (
-        <div className="w-9 h-9 rounded-full bg-[#162C24] border border-[#6B9080] flex items-center justify-center">
-          <ChevronDown className="w-5 h-5 text-[#A4C3B2] rotate-180 transition-transform duration-200" />
+        <div className="w-9 h-9 rounded-full bg-[#2F3D75] border border-[#6E8CFB] flex items-center justify-center">
+          <ChevronDown className="w-5 h-5 text-[#EAF0FF] rotate-180 transition-transform duration-200" />
         </div>
       ) : (
         <OfficerBadgeIcon className="w-9 h-9 transition-transform duration-300 group-hover:scale-105" />
@@ -96,24 +96,24 @@ const FloatingBadgeButton: React.FC<FABProps> = ({ onClick, pulse, isOpen, title
 
       {/* Red Alert / Live Notification Dot */}
       {pulse && !isOpen && (
-        <span className="absolute -top-0.5 -right-0.5 w-2.5 h-2.5 rounded-full bg-rose-500 border-2 border-[#0F1E18] animate-ping" />
+        <span className="absolute -top-0.5 -right-0.5 w-2.5 h-2.5 rounded-full bg-rose-500 border-2 border-[#3C467B] animate-ping" />
       )}
     </div>
 
     {/* Right: Stacked Label */}
     <div className="flex flex-col items-start pr-1 text-left leading-none select-none">
       <div className="flex items-center gap-1.5 mb-1">
-        <span className="text-[13px] font-bold text-[#F6FFF8] tracking-tight font-sans">
+        <span className="text-[13px] font-bold text-[#F8F5F3] tracking-tight font-sans">
           Vidyut AI
         </span>
-        {/* Live Green Online Beacon */}
+        {/* Live blue online beacon */}
         <span className="relative flex h-2 w-2 items-center justify-center">
-          <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
-          <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-emerald-400 shadow-[0_0_6px_#34d399]" />
+          <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#6E8CFB] opacity-75" />
+          <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-[#6E8CFB] shadow-[0_0_6px_#6E8CFB]" />
         </span>
       </div>
 
-      <span className="text-[10px] text-[#A4C3B2] font-medium tracking-wide">
+      <span className="text-[10px] text-[#EAF0FF]/80 font-medium tracking-wide">
         {titleText}
       </span>
     </div>
@@ -297,8 +297,8 @@ export const VidyutAssistant: React.FC<VidyutAssistantProps> = ({
             maxHeight: 'calc(100vh - 10rem)',
             backgroundColor: '#FFFFFF',
             borderRadius: '20px',
-            border: '1px solid #CCE3DE',
-            boxShadow: '0 20px 60px rgba(27, 51, 43, 0.25), 0 4px 16px rgba(0, 0, 0, 0.1)',
+            border: '1px solid #DDE4FF',
+            boxShadow: '0 20px 60px rgba(60, 70, 123, 0.22), 0 4px 16px rgba(0, 0, 0, 0.08)',
             display: 'flex',
             flexDirection: 'column',
             overflow: 'hidden',
@@ -308,7 +308,7 @@ export const VidyutAssistant: React.FC<VidyutAssistantProps> = ({
           {/* Header */}
           <div
             style={{
-              backgroundColor: '#162C24',
+              backgroundColor: '#3C467B',
               padding: '14px 16px 12px',
               display: 'flex',
               alignItems: 'center',
@@ -321,10 +321,10 @@ export const VidyutAssistant: React.FC<VidyutAssistantProps> = ({
 
             {/* Title + dynamic role subtitle */}
             <div style={{ flex: 1, minWidth: 0 }}>
-              <p style={{ color: '#F6FFF8', fontWeight: 700, fontSize: 14, lineHeight: 1.2, margin: 0 }}>
+              <p style={{ color: '#F8F5F3', fontWeight: 700, fontSize: 14, lineHeight: 1.2, margin: 0 }}>
                 Vidyut AI
               </p>
-              <p style={{ color: '#A4C3B2', fontSize: 11, margin: 0, fontWeight: 500 }}>
+              <p style={{ color: '#EAF0FF', fontSize: 11, margin: 0, fontWeight: 500 }}>
                 {assistantTitle}
               </p>
             </div>
@@ -334,12 +334,12 @@ export const VidyutAssistant: React.FC<VidyutAssistantProps> = ({
               style={{
                 padding: '2px 8px',
                 borderRadius: 999,
-                backgroundColor: 'rgba(164, 195, 178, 0.15)',
-                border: '1px solid rgba(164, 195, 178, 0.3)',
+                backgroundColor: 'rgba(110, 140, 251, 0.15)',
+                border: '1px solid rgba(110, 140, 251, 0.35)',
                 flexShrink: 0,
               }}
             >
-              <span style={{ color: '#CCE3DE', fontSize: 10, fontWeight: 600, fontFamily: 'monospace' }}>
+              <span style={{ color: '#EAF0FF', fontSize: 10, fontWeight: 600, fontFamily: 'monospace' }}>
                 {guidance.badge.split(' ').slice(1).join(' ')}
               </span>
             </div>
@@ -355,14 +355,14 @@ export const VidyutAssistant: React.FC<VidyutAssistantProps> = ({
                 border: 'none',
                 cursor: 'pointer',
                 padding: 4,
-                color: '#A4C3B2',
+                color: '#EAF0FF',
                 display: 'flex',
                 alignItems: 'center',
                 borderRadius: 8,
                 transition: 'color 0.15s',
               }}
-              onMouseOver={(e) => { (e.currentTarget as HTMLButtonElement).style.color = '#F6FFF8' }}
-              onMouseOut={(e) => { (e.currentTarget as HTMLButtonElement).style.color = '#A4C3B2' }}
+              onMouseOver={(e) => { (e.currentTarget as HTMLButtonElement).style.color = '#FFFFFF' }}
+              onMouseOut={(e) => { (e.currentTarget as HTMLButtonElement).style.color = '#EAF0FF' }}
             >
               <X style={{ width: 16, height: 16 }} />
             </button>
@@ -533,16 +533,16 @@ export const VidyutAssistant: React.FC<VidyutAssistantProps> = ({
                 flex: 1,
                 padding: '9px 12px',
                 borderRadius: 12,
-                border: '1.5px solid #CCE3DE',
+                border: '1.5px solid #DDE4FF',
                 backgroundColor: '#FFFFFF',
-                color: '#1B332B',
+                color: '#1E2550',
                 fontSize: 12.5,
                 outline: 'none',
                 fontFamily: 'inherit',
                 transition: 'border-color 0.15s',
               }}
-              onFocus={(e) => { e.target.style.borderColor = '#6B9080' }}
-              onBlur={(e) => { e.target.style.borderColor = '#CCE3DE' }}
+              onFocus={(e) => { e.target.style.borderColor = '#636CCB' }}
+              onBlur={(e) => { e.target.style.borderColor = '#DDE4FF' }}
             />
             <button
               id="vidyut-send-btn"
@@ -554,7 +554,7 @@ export const VidyutAssistant: React.FC<VidyutAssistantProps> = ({
                 width: 36,
                 height: 36,
                 borderRadius: '50%',
-                backgroundColor: inputText.trim() && !isLoading ? '#162C24' : '#CCE3DE',
+                backgroundColor: inputText.trim() && !isLoading ? '#3C467B' : '#DDE4FF',
                 border: 'none',
                 cursor: inputText.trim() && !isLoading ? 'pointer' : 'not-allowed',
                 display: 'flex',
@@ -568,7 +568,7 @@ export const VidyutAssistant: React.FC<VidyutAssistantProps> = ({
                 style={{
                   width: 15,
                   height: 15,
-                  color: inputText.trim() && !isLoading ? '#A4C3B2' : '#5C776E',
+                  color: inputText.trim() && !isLoading ? '#F8F5F3' : '#636CCB',
                 }}
               />
             </button>

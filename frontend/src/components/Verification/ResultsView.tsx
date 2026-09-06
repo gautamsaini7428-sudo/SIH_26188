@@ -13,10 +13,6 @@ import {
   ShieldAlert,
   Download,
   Link2,
-  ArrowRight,
-  Clock,
-  CheckCheck,
-  FileCheck2,
 } from 'lucide-react'
 import { Card, CardHeader, CardTitle, CardContent } from '../ui/card'
 import { Badge } from '../ui/badge'
@@ -35,7 +31,6 @@ interface ResultsViewProps {
   selfiePreviewUrl?: string | null
   documentName: string
   onReset: () => void
-  onProceedToBiometrics?: () => void
 }
 
 export const ResultsView: React.FC<ResultsViewProps> = ({
@@ -43,7 +38,6 @@ export const ResultsView: React.FC<ResultsViewProps> = ({
   documentPreviewUrl,
   selfiePreviewUrl,
   onReset,
-  onProceedToBiometrics,
 }) => {
   const {
     document_type,
@@ -67,11 +61,6 @@ export const ResultsView: React.FC<ResultsViewProps> = ({
     officer_email,
     mrz,
     identity_links = [],
-    document_authenticity,
-    risk_breakdown,
-    cross_field_consistency,
-    why_flagged,
-    timeline,
   } = result
 
   const isRejected = verdict === 'REJECTED'
@@ -106,14 +95,9 @@ export const ResultsView: React.FC<ResultsViewProps> = ({
   const effectiveRiskLevel = risk_level || (risk_score >= 65 ? 'HIGH RISK' : risk_score >= 30 ? 'MEDIUM RISK' : 'LOW RISK')
   const riskVariant = effectiveRiskLevel.includes('HIGH') ? 'destructive' : effectiveRiskLevel.includes('MEDIUM') ? 'warning' : 'success'
 
-  // Two-Stage Status
-  const docAuthStatus = document_authenticity?.status || (isRejected || isFake ? 'FAIL' : isSuspicious ? 'REVIEW' : 'PASS')
-  const hasBiometric = biometric && biometric.status !== 'NOT_APPLICABLE' && selfiePreviewUrl
-  const canProceedToBiometrics = Boolean(onProceedToBiometrics && !hasBiometric && document_type !== 'VISA' && !isRejected)
-
   return (
     <div className="space-y-6 max-w-5xl mx-auto pb-12">
-      {/* ── 1. TWO-STAGE HERO HEADER & STAMP ── */}
+      {/* ── 1. FINAL VERIFICATION / HERO HEADER ── */}
       <Card className="border-[#E5DDD8] bg-[#FFFFFF] shadow-sm overflow-hidden">
         <div className="p-6 sm:p-8 flex flex-col md:flex-row items-center justify-between gap-6">
           {/* Radial Risk Gauge */}
@@ -152,49 +136,12 @@ export const ResultsView: React.FC<ResultsViewProps> = ({
                 {isGenuine && <CheckCircle2 className="w-5 h-5 mr-2 inline" />}
                 {isSuspicious && <AlertTriangle className="w-5 h-5 mr-2 inline text-[#755B73]" />}
                 {(isFake || isRejected) && <XCircle className="w-5 h-5 mr-2 inline text-[#DC2626]" />}
-                <span>DECISION: {verdict}</span>
+                <span>OVERALL STATUS: {verdict}</span>
               </Badge>
 
               <Badge variant={riskVariant} className="font-mono text-xs px-2.5 py-1">
                 {effectiveRiskLevel} ({risk_score}/100)
               </Badge>
-            </div>
-
-            {/* Two-Stage Summary Indicators */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 pt-1">
-              <div className="p-2 rounded-lg bg-[#FCFAF8] border border-[#E5DDD8] flex items-center justify-between text-xs">
-                <span className="text-[#755B73] font-mono">Stage 1: Document Authenticity</span>
-                <Badge
-                  variant={docAuthStatus === 'PASS' ? 'success' : docAuthStatus === 'REVIEW' ? 'warning' : 'destructive'}
-                  className="font-mono text-[10px] px-2 py-0.5 uppercase"
-                >
-                  {docAuthStatus}
-                </Badge>
-              </div>
-
-              <div className="p-2 rounded-lg bg-[#FCFAF8] border border-[#E5DDD8] flex items-center justify-between text-xs">
-                <span className="text-[#755B73] font-mono">Stage 2: Biometric Match</span>
-                <Badge
-                  variant={
-                    document_type === 'VISA'
-                      ? 'outline'
-                      : !hasBiometric
-                      ? 'outline'
-                      : biometric?.status === 'VERIFIED'
-                      ? 'success'
-                      : biometric?.status === 'NEEDS_REVIEW' || biometric?.status === 'RETRY'
-                      ? 'warning'
-                      : 'destructive'
-                  }
-                  className="font-mono text-[10px] px-2 py-0.5 uppercase"
-                >
-                  {document_type === 'VISA'
-                    ? 'SKIPPED (VISA)'
-                    : !hasBiometric
-                    ? 'PENDING CAPTURE'
-                    : biometric?.face_match.status || 'MATCH'}
-                </Badge>
-              </div>
             </div>
 
             {/* Verdict Explanation Reason */}
@@ -205,56 +152,35 @@ export const ResultsView: React.FC<ResultsViewProps> = ({
             )}
           </div>
 
-          {/* Action CTAs */}
-          <div className="shrink-0 flex flex-col gap-2 w-full sm:w-auto">
-            {canProceedToBiometrics && (
+          {/* Actions */}
+          <div className="shrink-0 flex flex-wrap gap-2 items-center">
+            {result.verification_id && (
               <Button
                 onClick={() => {
-                  soundFX.paperSlide()
-                  onProceedToBiometrics?.()
+                  soundFX.stampImpact()
+                  window.open(`/verification/${result.verification_id}/export?format=json`, '_blank')
                 }}
+                variant="outline"
                 size="lg"
-                className="gap-2 bg-[#0B2925] hover:bg-[#133D37] text-[#F8F5F3] font-bold cursor-pointer shadow-md"
+                className="gap-2 border-[#0B2925] text-[#0B2925] hover:bg-[#0B2925]/10 font-bold cursor-pointer"
+                title="Download official forensic screening dossier"
               >
-                <span>Proceed to Biometric Verification</span>
-                <ArrowRight className="w-4 h-4" />
+                <Download className="w-4 h-4" />
+                <span>Export Dossier</span>
               </Button>
             )}
 
-            <div className="flex gap-2">
-              {result.verification_id && (
-                <Button
-                  onClick={() => {
-                    soundFX.stampImpact()
-                    window.open(`/verification/${result.verification_id}/export?format=json`, '_blank')
-                  }}
-                  variant="outline"
-                  size="sm"
-                  className="flex-1 gap-1 border-[#0B2925] text-[#0B2925] hover:bg-[#0B2925]/10 font-bold cursor-pointer text-xs"
-                  title="Download official forensic screening dossier"
-                >
-                  <Download className="w-3.5 h-3.5" />
-                  <span>Export JSON</span>
-                </Button>
-              )}
-
-              <Button
-                onClick={() => {
-                  soundFX.paperSlide()
-                  onReset()
-                }}
-                variant={canProceedToBiometrics ? 'outline' : 'default'}
-                size="sm"
-                className={`flex-1 gap-1 text-xs font-bold cursor-pointer ${
-                  canProceedToBiometrics
-                    ? 'border-[#E5DDD8] text-[#27212B]'
-                    : 'bg-[#0B2925] hover:bg-[#133D37] text-[#F8F5F3]'
-                }`}
-              >
-                <RotateCcw className="w-3.5 h-3.5" />
-                <span>New Case</span>
-              </Button>
-            </div>
+            <Button
+              onClick={() => {
+                soundFX.paperSlide()
+                onReset()
+              }}
+              size="lg"
+              className="gap-2 bg-[#3C467B] hover:bg-[#50589C] text-[#F8F5F3] font-bold cursor-pointer"
+            >
+              <RotateCcw className="w-4 h-4" />
+              <span>Start New Examination</span>
+            </Button>
           </div>
         </div>
       </Card>
@@ -264,160 +190,15 @@ export const ResultsView: React.FC<ResultsViewProps> = ({
         <Card className="p-6 border-[#DC2626]/40 bg-[#DC2626]/10 text-[#DC2626] space-y-2">
           <div className="flex items-center gap-2 text-base font-bold">
             <XCircle className="w-5 h-5 shrink-0" />
-            <span>Intake Structural Validation Failure</span>
+            <span>Fast-Fail Intake Rejection Triggered</span>
           </div>
           <p className="text-xs text-[#27212B] font-medium">
-            {reason || 'Forensic analysis skipped because the specimen failed basic identity document validation (no extractable text or facial landmarks detected).'}
+            Forensic analysis skipped because the specimen failed basic identity document validation (no extractable text or facial landmarks detected).
           </p>
         </Card>
       ) : (
         <>
-          {/* ── 2. "WHY WAS THIS FLAGGED?" INSPECTABLE EVIDENCE ── */}
-          {why_flagged && why_flagged.length > 0 && (
-            <Card className="border-[#E5DDD8] bg-[#FFFFFF] overflow-hidden">
-              <CardHeader className="pb-3 border-b border-[#E5DDD8] bg-[#FCFAF8]">
-                <CardTitle className="text-sm font-semibold text-[#27212B] flex items-center gap-2">
-                  <CheckCheck className="w-4 h-4 text-[#0B2925]" />
-                  <span>Why Was This Decision Reached? (Inspectable Evidence)</span>
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="p-4 sm:p-6 space-y-2">
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
-                  {why_flagged.map((item, idx) => (
-                    <div
-                      key={idx}
-                      className={`p-3 rounded-lg border flex items-start gap-2.5 ${
-                        item.type === 'PASS'
-                          ? 'bg-[#A7F3D0]/10 border-[#A7F3D0]/40 text-[#0B2925]'
-                          : item.type === 'WARN'
-                          ? 'bg-amber-50 border-amber-200 text-amber-900'
-                          : 'bg-[#DC2626]/10 border-[#DC2626]/30 text-[#DC2626]'
-                      }`}
-                    >
-                      {item.type === 'PASS' && <CheckCircle2 className="w-4 h-4 shrink-0 text-[#0B2925] mt-0.5" />}
-                      {item.type === 'WARN' && <AlertTriangle className="w-4 h-4 shrink-0 text-amber-700 mt-0.5" />}
-                      {item.type === 'FAIL' && <XCircle className="w-4 h-4 shrink-0 text-[#DC2626] mt-0.5" />}
-                      <div className="space-y-0.5">
-                        <strong className="block font-semibold">{item.title}</strong>
-                        <span className="text-[11px] opacity-90">{item.description}</span>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </CardContent>
-            </Card>
-          )}
-
-          {/* ── 3. EXPLAINABLE RISK BREAKDOWN ── */}
-          {risk_breakdown && risk_breakdown.length > 0 && (
-            <Card className="border-[#E5DDD8] bg-[#FFFFFF] overflow-hidden">
-              <CardHeader className="pb-3 border-b border-[#E5DDD8] bg-[#FCFAF8]">
-                <div className="flex items-center justify-between">
-                  <CardTitle className="text-sm font-semibold text-[#27212B] flex items-center gap-2">
-                    <ShieldAlert className="w-4 h-4 text-[#0B2925]" />
-                    <span>Explainable Risk Factor Breakdown</span>
-                  </CardTitle>
-                  <Badge variant={riskVariant} className="font-mono text-xs">
-                    Composite: {risk_score}/100
-                  </Badge>
-                </div>
-              </CardHeader>
-              <CardContent className="p-0">
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead className="text-[#755B73]">Contributing Factor</TableHead>
-                      <TableHead className="text-[#755B73]">Category</TableHead>
-                      <TableHead className="text-[#755B73]">Forensic Evidence</TableHead>
-                      <TableHead className="text-right text-[#755B73]">Risk Weight</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {risk_breakdown.map((item, idx) => (
-                      <TableRow key={idx}>
-                        <TableCell className="font-semibold text-xs text-[#27212B]">
-                          {item.factor}
-                        </TableCell>
-                        <TableCell>
-                          <Badge variant="outline" className="font-mono text-[10px] uppercase">
-                            {item.category}
-                          </Badge>
-                        </TableCell>
-                        <TableCell className="text-xs text-[#755B73]">
-                          {item.description}
-                        </TableCell>
-                        <TableCell className="text-right font-mono text-xs font-bold text-[#DC2626]">
-                          +{item.points} pts
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              </CardContent>
-            </Card>
-          )}
-
-          {/* ── 4. CROSS-FIELD CONSISTENCY MATRIX ── */}
-          {cross_field_consistency && cross_field_consistency.checks && cross_field_consistency.checks.length > 0 && (
-            <Card className="border-[#E5DDD8] bg-[#FFFFFF] overflow-hidden">
-              <CardHeader className="pb-3 border-b border-[#E5DDD8] bg-[#FCFAF8]">
-                <div className="flex items-center justify-between">
-                  <CardTitle className="text-sm font-semibold text-[#27212B] flex items-center gap-2">
-                    <FileCheck2 className="w-4 h-4 text-[#0B2925]" />
-                    <span>Cross-Field Consistency Engine (Visual OCR vs MRZ / Cryptographic QR)</span>
-                  </CardTitle>
-                  <Badge
-                    variant={cross_field_consistency.status === 'CONSISTENT' ? 'success' : 'destructive'}
-                    className="font-mono text-xs"
-                  >
-                    {cross_field_consistency.status} ({cross_field_consistency.passed_checks}/{cross_field_consistency.total_checks})
-                  </Badge>
-                </div>
-              </CardHeader>
-              <CardContent className="p-0">
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead className="text-[#755B73]">Attribute</TableHead>
-                      <TableHead className="text-[#755B73]">Visual OCR Zone</TableHead>
-                      <TableHead className="text-[#755B73]">Security / MRZ / QR Zone</TableHead>
-                      <TableHead className="text-right text-[#755B73]">Consistency Status</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {cross_field_consistency.checks.map((c, idx) => (
-                      <TableRow key={idx}>
-                        <TableCell className="font-semibold text-xs text-[#27212B]">
-                          {c.field_name}
-                        </TableCell>
-                        <TableCell className="font-mono text-xs text-[#27212B]">
-                          {c.value_a || '—'}
-                        </TableCell>
-                        <TableCell className="font-mono text-xs text-[#27212B]">
-                          {c.value_b || '—'}
-                        </TableCell>
-                        <TableCell className="text-right font-mono text-xs font-bold">
-                          {c.is_match ? (
-                            <span className="inline-flex items-center gap-1 text-[#0B2925]">
-                              <Check className="w-3.5 h-3.5" />
-                              Match
-                            </span>
-                          ) : (
-                            <span className="inline-flex items-center gap-1 text-[#DC2626]">
-                              <XCircle className="w-3.5 h-3.5" />
-                              Mismatch
-                            </span>
-                          )}
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              </CardContent>
-            </Card>
-          )}
-
-          {/* ── 5. DOCUMENT INFORMATION CARD ── */}
+          {/* ── 2. DOCUMENT INFORMATION CARD ── */}
           <Card className="border-[#E5DDD8] bg-[#FFFFFF]">
             <CardHeader className="pb-3 border-b border-[#E5DDD8] bg-[#FCFAF8]">
               <div className="flex flex-wrap items-center justify-between gap-2">
@@ -748,42 +529,7 @@ export const ResultsView: React.FC<ResultsViewProps> = ({
             )}
           </Card>
 
-          {/* ── 10. VERIFICATION PIPELINE TIMELINE ── */}
-          {timeline && timeline.length > 0 && (
-            <Card className="border-[#E5DDD8] bg-[#FFFFFF] p-6 space-y-4">
-              <div className="flex items-center justify-between border-b border-[#E5DDD8] pb-3">
-                <div className="flex items-center gap-2">
-                  <Clock className="w-4 h-4 text-[#0B2925]" />
-                  <h3 className="text-sm font-semibold text-[#27212B]">Verification Pipeline Execution Timeline</h3>
-                </div>
-                <Badge variant="outline" className="font-mono text-xs">
-                  Total Time: {result.processing_time_ms || 0} ms
-                </Badge>
-              </div>
-
-              <div className="space-y-2">
-                {timeline.map((stage, idx) => (
-                  <div key={idx} className="flex items-start gap-3 p-2.5 rounded-lg bg-[#FCFAF8] border border-[#E5DDD8] text-xs">
-                    <div className="mt-0.5">
-                      {stage.status === 'COMPLETED' && <CheckCircle2 className="w-4 h-4 text-[#0B2925]" />}
-                      {stage.status === 'WARN' && <AlertTriangle className="w-4 h-4 text-amber-600" />}
-                      {stage.status === 'FAILED' && <XCircle className="w-4 h-4 text-[#DC2626]" />}
-                      {stage.status === 'SKIPPED' && <Info className="w-4 h-4 text-[#755B73]" />}
-                    </div>
-                    <div className="flex-1 space-y-0.5">
-                      <div className="flex items-center justify-between">
-                        <span className="font-semibold text-[#27212B]">{stage.label}</span>
-                        <span className="font-mono text-[10px] text-[#755B73]">{stage.duration_ms} ms</span>
-                      </div>
-                      <p className="text-[11px] text-[#755B73]">{stage.details}</p>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </Card>
-          )}
-
-          {/* ── 11. COMPREHENSIVE VERIFICATION SUMMARY ── */}
+          {/* ── 8. COMPREHENSIVE VERIFICATION SUMMARY ── */}
           <Card className="border-[#E5DDD8] bg-[#FCFAF8] p-6 space-y-3">
             <div className="flex items-center gap-2">
               <ShieldCheck className="w-4 h-4 text-[#0B2925]" />

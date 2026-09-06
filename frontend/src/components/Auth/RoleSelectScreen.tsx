@@ -60,7 +60,7 @@ export const RoleSelectScreen: React.FC<RoleSelectScreenProps> = ({ onSelectRole
             >
               <span
                 className="text-[11px] font-semibold px-3 py-1 rounded-full cursor-pointer"
-                style={{ backgroundColor: '#0B2925', color: '#F8F5F3' }}
+                style={{ backgroundColor: '#3C467B', color: '#F8F5F3' }}
               >
                 Role Portals
               </span>
@@ -125,11 +125,11 @@ export const RoleSelectScreen: React.FC<RoleSelectScreenProps> = ({ onSelectRole
                         <div
                           className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0 transition-transform duration-200 group-hover:scale-105"
                           style={{
-                            backgroundColor: '#0B2925',
-                            color: '#A7F3D0',
+                            backgroundColor: '#3C467B',
+                            color: '#EAF0FF',
                           }}
                         >
-                          <Icon className="w-5 h-5 text-[#A7F3D0]" />
+                          <Icon className="w-5 h-5 text-[#EAF0FF]" />
                         </div>
                         <ArrowRight
                           className="w-4 h-4 transition-transform duration-200 group-hover:translate-x-1"
