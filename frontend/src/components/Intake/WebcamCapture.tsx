@@ -107,18 +107,18 @@ export const WebcamCapture: React.FC<WebcamCaptureProps> = ({
     <div className="space-y-6">
       {/* Header */}
       <div className="space-y-1">
-        <h2 className="text-2xl sm:text-3xl font-bold text-[#27212B] tracking-tight font-editorial">
+        <h2 className="text-2xl sm:text-3xl font-bold text-[#3C467B] dark:text-[#DEF4F2] tracking-tight font-editorial">
           Step 2 of 2: Live Facial Biometric Capture
         </h2>
-        <p className="text-xs sm:text-sm text-[#755B73]">
+        <p className="text-xs sm:text-sm text-[#50589C] dark:text-[#AAB6C8]">
           A live facial capture is required to compare physical biometric landmarks against Exhibit A.
         </p>
       </div>
 
       {/* Main Viewport */}
       {!capturedSelfieUrl ? (
-        <Card className="p-6 space-y-4 border-[#E5DDD8] bg-[#FFFFFF]">
-          <div className="relative aspect-[4/3] max-w-lg mx-auto rounded-xl border border-[#E5DDD8] bg-[#F8F5F3] overflow-hidden flex items-center justify-center">
+        <Card className="p-6 space-y-4 border-[#DDE4FF] dark:border-[#1C345C] bg-[#FFFFFF] dark:bg-[#111C30]">
+          <div className="relative aspect-[4/3] max-w-lg mx-auto rounded-xl border border-[#DDE4FF] dark:border-[#1C345C] bg-[#F3F6FF] dark:bg-[#0C162F] overflow-hidden flex items-center justify-center">
             {/* Live Video Stream */}
             <video
               ref={videoRef}
@@ -143,18 +143,18 @@ export const WebcamCapture: React.FC<WebcamCaptureProps> = ({
             {/* Camera Offline Fallback */}
             {!isCameraActive && (
               <div className="text-center p-6 space-y-3 max-w-sm">
-                <div className="w-12 h-12 mx-auto rounded-xl bg-[#FFFFFF] border border-[#E5DDD8] flex items-center justify-center text-[#0B2925] shadow-xs">
-                  <Camera className="w-6 h-6 text-[#0B2925]" />
+                <div className="w-12 h-12 mx-auto rounded-xl bg-[#EAF0FF] dark:bg-[#1C345C] border border-[#DDE4FF] dark:border-[#3D8FD8] flex items-center justify-center text-[#3C467B] dark:text-[#6AC7D4] shadow-xs">
+                  <Camera className="w-6 h-6 text-[#3C467B] dark:text-[#6AC7D4]" />
                 </div>
                 <div>
-                  <h4 className="text-base font-bold text-[#27212B]">
+                  <h4 className="text-base font-bold text-[#3C467B] dark:text-[#DEF4F2]">
                     {cameraError ? 'Camera Standby / Offline' : 'Initializing Webcam...'}
                   </h4>
-                  <p className="text-xs text-[#755B73] mt-1">
+                  <p className="text-xs text-[#50589C] dark:text-[#AAB6C8] mt-1">
                     {cameraError || 'Please allow browser camera permissions when prompted.'}
                   </p>
                 </div>
-                <Button variant="outline" size="sm" onClick={startWebcam} className="text-xs border-[#E5DDD8] text-[#27212B] bg-[#FFFFFF] hover:bg-[#F8F5F3] cursor-pointer">
+                <Button variant="outline" size="sm" onClick={startWebcam} className="text-xs !text-[#3C467B] dark:!text-[#DEF4F2] border-[#DDE4FF] dark:border-[#1C345C] bg-[#FFFFFF] dark:bg-[#111C30] hover:bg-[#F3F6FF] dark:hover:bg-[#1C345C] cursor-pointer">
                   Retry Camera Connection
                 </Button>
               </div>
@@ -164,7 +164,7 @@ export const WebcamCapture: React.FC<WebcamCaptureProps> = ({
           {/* Trigger Button */}
           {isCameraActive && (
             <div className="flex justify-center pt-2">
-              <Button onClick={handleCapture} className="gap-2 bg-[#0B2925] hover:bg-[#133D37] text-[#F8F5F3] font-bold cursor-pointer">
+              <Button onClick={handleCapture} className="gap-2 bg-[#3C467B] dark:bg-[#334FE0] hover:bg-[#50589C] dark:hover:bg-[#3D8FD8] text-white font-bold cursor-pointer">
                 <Camera className="w-4 h-4" />
                 <span>Capture Live Biometric Photo</span>
               </Button>
@@ -188,13 +188,13 @@ export const WebcamCapture: React.FC<WebcamCaptureProps> = ({
       )}
 
       {/* Navigation Actions */}
-      <div className="pt-4 flex items-center justify-between border-t border-[#E5DDD8]">
-        <Button variant="outline" onClick={onBackToStep1} className="gap-1.5 text-xs border-[#E5DDD8] text-[#27212B] bg-[#FFFFFF] hover:bg-[#F8F5F3] cursor-pointer">
+      <div className="pt-4 flex items-center justify-between border-t border-[#DDE4FF] dark:border-[#1C345C]">
+        <Button variant="outline" onClick={onBackToStep1} className="gap-1.5 text-xs !text-[#3C467B] dark:!text-[#DEF4F2] border-[#DDE4FF] dark:border-[#1C345C] bg-[#FFFFFF] dark:bg-[#111C30] hover:bg-[#F3F6FF] dark:hover:bg-[#1C345C] cursor-pointer">
           <ArrowLeft className="w-3.5 h-3.5" />
           <span>Back to Step 1</span>
         </Button>
 
-        <Button onClick={onSubmitForVerification} disabled={!capturedSelfieUrl} size="lg" className="gap-2 bg-[#0B2925] hover:bg-[#133D37] text-[#F8F5F3] font-bold cursor-pointer">
+        <Button onClick={onSubmitForVerification} disabled={!capturedSelfieUrl} size="lg" className="gap-2 bg-[#3C467B] dark:bg-[#334FE0] hover:bg-[#50589C] dark:hover:bg-[#3D8FD8] text-white font-bold cursor-pointer">
           <span>Submit Case File for Verification</span>
           <ArrowRight className="w-4 h-4" />
         </Button>

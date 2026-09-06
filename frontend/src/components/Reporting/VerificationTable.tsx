@@ -160,7 +160,7 @@ export const VerificationTable: FC<VerificationTableProps> = ({ records }) => {
               <th className="px-4 py-2.5 text-right">Screened By</th>
             </tr>
           </thead>
-          <tbody className="divide-y divide-[#F2ECE9] bg-[#FFFFFF]">
+          <tbody className="divide-y divide-[#1C345C] dark:bg-[#0C162F]">
             {filteredAndSortedRecords.length === 0 ? (
               <tr>
                 <td colSpan={10} className="px-4 py-8 text-center text-xs text-[#6E6571] font-sans">

@@ -295,21 +295,21 @@ export const SupervisorConsole: React.FC = () => {
       <AnalyticsCharts records={records} />
 
       {/* FILTERABLE AUDIT TABLE */}
-      <Card className="border-[#E5DDD8] dark:border-[#A7F3D0]/20 bg-[#FFFFFF] dark:bg-[#0B2925] overflow-hidden">
-        <CardHeader className="p-4 sm:p-5 border-b border-[#E5DDD8] dark:border-[#A7F3D0]/20 bg-[#F8F5F3] dark:bg-[#133D37]/40 flex flex-col sm:flex-row sm:items-center justify-between gap-3 space-y-0">
+      <Card className="border-[#DDE4FF] dark:border-[#1C345C] bg-[#FFFFFF] dark:bg-[#111C30] overflow-hidden">
+        <CardHeader className="p-4 sm:p-5 border-b border-[#DDE4FF] dark:border-[#1C345C] bg-[#F3F6FF] dark:bg-[#0C162F] flex flex-col sm:flex-row sm:items-center justify-between gap-3 space-y-0">
           <div className="relative max-w-xs w-full">
-            <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-[#755B73]" />
+            <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-[#50589C] dark:text-[#AAB6C8]" />
             <Input
               type="text"
               placeholder="Search by name, case ID, officer..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="pl-9 text-xs bg-[#FFFFFF] border-[#DDE4FF] text-[#1E2550]"
+              className="pl-9 text-xs bg-[#FFFFFF] dark:bg-[#111C30] border-[#DDE4FF] dark:border-[#1C345C] text-[#1E2550] dark:text-[#DEF4F2]"
             />
           </div>
 
           {/* Filter Pills */}
-          <div className="flex flex-wrap items-center gap-1.5 bg-[#FFFFFF] p-1 rounded-xl border border-[#DDE4FF]">
+          <div className="flex flex-wrap items-center gap-1.5 bg-[#FFFFFF] dark:bg-[#111C30] p-1 rounded-xl border border-[#DDE4FF] dark:border-[#1C345C]">
             {(['ALL', 'GENUINE', 'SUSPICIOUS', 'FAKE', 'REJECTED'] as const).map((filter) => (
               <Button
                 key={filter}
@@ -321,8 +321,8 @@ export const SupervisorConsole: React.FC = () => {
                 }}
                 className={`text-xs h-7 px-2.5 cursor-pointer ${
                   verdictFilter === filter
-                    ? 'bg-[#3C467B] text-[#F8F5F3] font-bold'
-                    : 'text-[#50589C] hover:text-[#1E2550]'
+                    ? 'bg-[#3C467B] dark:bg-[#334FE0] text-white font-bold'
+                    : 'text-[#50589C] dark:text-[#AAB6C8] hover:text-[#3C467B] dark:hover:text-white'
                 }`}
               >
                 {filter === 'ALL' ? 'All Cases' : filter}
@@ -335,16 +335,16 @@ export const SupervisorConsole: React.FC = () => {
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead className="text-[#755B73]">Case Ref</TableHead>
-                <TableHead className="text-[#755B73]">Timestamp</TableHead>
-                <TableHead className="text-[#755B73]">Subject Name</TableHead>
-                <TableHead className="text-[#755B73]">Doc Type</TableHead>
-                <TableHead className="text-[#755B73]">Checkpoint Location</TableHead>
-                <TableHead className="text-[#755B73]">Verdict</TableHead>
-                <TableHead className="text-center text-[#755B73]">Risk Score</TableHead>
-                <TableHead className="text-center text-[#755B73]">Tamper</TableHead>
-                <TableHead className="text-center text-[#755B73]">Face Match</TableHead>
-                <TableHead className="text-right text-[#755B73]">Screened By</TableHead>
+                <TableHead className="text-[#3C467B] dark:text-[#AAB6C8]">Case Ref</TableHead>
+                <TableHead className="text-[#3C467B] dark:text-[#AAB6C8]">Timestamp</TableHead>
+                <TableHead className="text-[#3C467B] dark:text-[#AAB6C8]">Subject Name</TableHead>
+                <TableHead className="text-[#3C467B] dark:text-[#AAB6C8]">Doc Type</TableHead>
+                <TableHead className="text-[#3C467B] dark:text-[#AAB6C8]">Checkpoint Location</TableHead>
+                <TableHead className="text-[#3C467B] dark:text-[#AAB6C8]">Verdict</TableHead>
+                <TableHead className="text-center text-[#3C467B] dark:text-[#AAB6C8]">Risk Score</TableHead>
+                <TableHead className="text-center text-[#3C467B] dark:text-[#AAB6C8]">Tamper</TableHead>
+                <TableHead className="text-center text-[#3C467B] dark:text-[#AAB6C8]">Face Match</TableHead>
+                <TableHead className="text-right text-[#3C467B] dark:text-[#AAB6C8]">Screened By</TableHead>
               </TableRow>
             </TableHeader>
 
@@ -365,21 +365,21 @@ export const SupervisorConsole: React.FC = () => {
                     <TableRow
                       key={r.id}
                       onClick={() => handleRowClick(r)}
-                      className="cursor-pointer hover:bg-[#F8F5F3] text-xs"
+                      className="cursor-pointer !bg-[#636CCB] hover:!bg-[#6E8CFB] dark:!bg-[#111C30] dark:hover:!bg-[#1C345C] text-xs text-white dark:text-[#DEF4F2]"
                     >
-                      <TableCell className="font-mono font-bold text-[#0B2925] whitespace-nowrap">
+                      <TableCell className="font-mono font-bold !text-white dark:!text-[#DEF4F2] whitespace-nowrap">
                         {r.caseNumber}
                       </TableCell>
-                      <TableCell className="text-[#755B73] whitespace-nowrap">
+                      <TableCell className="!text-white/85 dark:!text-[#AAB6C8] whitespace-nowrap">
                         {new Date(r.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
                       </TableCell>
-                      <TableCell className="font-bold text-[#27212B] text-sm whitespace-nowrap">
+                      <TableCell className="font-bold !text-white dark:!text-[#DEF4F2] text-sm whitespace-nowrap">
                         {r.subjectName}
                       </TableCell>
-                      <TableCell className="font-mono text-[11px] text-[#755B73] whitespace-nowrap">
+                      <TableCell className="font-mono text-[11px] !text-white/85 dark:!text-[#AAB6C8] whitespace-nowrap">
                         {r.documentType}
                       </TableCell>
-                      <TableCell className="text-[#755B73] whitespace-nowrap">
+                      <TableCell className="!text-white/85 dark:!text-[#AAB6C8] whitespace-nowrap">
                         {r.checkpointLocation || 'Attari-Wagah Border'}
                       </TableCell>
                       <TableCell className="whitespace-nowrap">
@@ -403,13 +403,13 @@ export const SupervisorConsole: React.FC = () => {
                           {r.riskScore}/100
                         </span>
                       </TableCell>
-                      <TableCell className="text-center font-mono text-[#755B73] whitespace-nowrap">
+                      <TableCell className="text-center font-mono !text-white/85 dark:!text-[#AAB6C8] whitespace-nowrap">
                         {r.tamperingScore}/100
                       </TableCell>
-                      <TableCell className="text-center font-mono text-[#755B73] whitespace-nowrap">
+                      <TableCell className="text-center font-mono !text-white/85 dark:!text-[#AAB6C8] whitespace-nowrap">
                         {r.faceMatchScore !== undefined && r.faceMatchScore !== null ? `${r.faceMatchScore}%` : 'N/A'}
                       </TableCell>
-                      <TableCell className="text-right font-mono font-semibold text-[#27212B] whitespace-nowrap">
+                      <TableCell className="text-right font-mono font-semibold !text-white dark:!text-[#DEF4F2] whitespace-nowrap">
                         {r.officerEmail || r.examiner}
                       </TableCell>
                     </TableRow>
