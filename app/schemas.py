@@ -75,8 +75,64 @@ class ExtractedFields(BaseModel):
     expiry_date: Optional[str] = None
     address: Optional[str] = None
 
-    class Config:
-        extra = "allow"
+    model_config = ConfigDict(extra="allow")
+
+
+# ── SIH26188 Advanced Forensics & Timeline Sub-models ──
+
+class DocumentAuthenticityCheckItem(BaseModel):
+    id: str
+    name: str
+    status: str = Field(..., description="PASS | WARN | FAIL")
+    score: int = Field(default=100, ge=0, le=100)
+    details: str = ""
+
+
+class DocumentAuthenticityResult(BaseModel):
+    status: str = Field(default="PASS", description="PASS | REVIEW | FAIL")
+    score: int = Field(default=100, ge=0, le=100)
+    is_genuine_structure: bool = True
+    checks: List[DocumentAuthenticityCheckItem] = Field(default_factory=list)
+    summary: str = ""
+
+
+class RiskBreakdownItem(BaseModel):
+    factor: str
+    points: int
+    category: str = Field(default="GENERAL", description="TAMPERING | BIOMETRIC | VALIDATION | CRYPTO | INTEGRITY")
+    description: str
+
+
+class CrossFieldCheckItem(BaseModel):
+    field_name: str
+    source_a: str = "VISUAL_OCR"
+    value_a: Optional[str] = None
+    source_b: str = "MRZ"
+    value_b: Optional[str] = None
+    is_match: bool = True
+    details: str = ""
+
+
+class CrossFieldConsistencyResult(BaseModel):
+    status: str = Field(default="CONSISTENT", description="CONSISTENT | DISCREPANCY_DETECTED | NOT_APPLICABLE")
+    total_checks: int = 0
+    passed_checks: int = 0
+    discrepancies: List[str] = Field(default_factory=list)
+    checks: List[CrossFieldCheckItem] = Field(default_factory=list)
+
+
+class WhyFlaggedItem(BaseModel):
+    type: str = Field(default="CHECK", description="PASS | WARN | FAIL")
+    title: str
+    description: str
+
+
+class VerificationTimelineStage(BaseModel):
+    stage_id: str
+    label: str
+    status: str = Field(default="COMPLETED", description="COMPLETED | WARN | FAILED | SKIPPED")
+    duration_ms: int = 0
+    details: str = ""
 
 
 class MRZResult(BaseModel):
@@ -206,6 +262,11 @@ class VerifyResponse(BaseModel):
     face_status: Optional[str] = None
     document_quality: Optional[Dict[str, Any]] = None
     field_provenance: Optional[Dict[str, Any]] = None
+    document_authenticity: Optional[DocumentAuthenticityResult] = None
+    risk_breakdown: Optional[List[RiskBreakdownItem]] = None
+    cross_field_consistency: Optional[CrossFieldConsistencyResult] = None
+    why_flagged: Optional[List[WhyFlaggedItem]] = None
+    timeline: Optional[List[VerificationTimelineStage]] = None
 
     model_config = ConfigDict(from_attributes=True)
 

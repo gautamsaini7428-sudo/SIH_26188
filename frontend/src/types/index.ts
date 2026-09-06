@@ -103,6 +103,61 @@ export interface AadhaarQRResult {
   message?: string | null
 }
 
+export interface DocumentAuthenticityCheckItem {
+  id: string
+  name: string
+  status: 'PASS' | 'WARN' | 'FAIL'
+  score: number
+  details?: string
+}
+
+export interface DocumentAuthenticityResult {
+  status: 'PASS' | 'REVIEW' | 'FAIL'
+  score: number
+  is_genuine_structure: boolean
+  checks: DocumentAuthenticityCheckItem[]
+  summary?: string
+}
+
+export interface RiskBreakdownItem {
+  factor: string
+  points: number
+  category: 'TAMPERING' | 'BIOMETRIC' | 'VALIDATION' | 'CRYPTO' | 'INTEGRITY' | 'GENERAL'
+  description: string
+}
+
+export interface CrossFieldCheckItem {
+  field_name: string
+  source_a: string
+  value_a?: string | null
+  source_b: string
+  value_b?: string | null
+  is_match: boolean
+  details?: string
+}
+
+export interface CrossFieldConsistencyResult {
+  status: 'CONSISTENT' | 'DISCREPANCY_DETECTED' | 'NOT_APPLICABLE'
+  total_checks: number
+  passed_checks: number
+  discrepancies: string[]
+  checks: CrossFieldCheckItem[]
+}
+
+export interface WhyFlaggedItem {
+  type: 'PASS' | 'WARN' | 'FAIL' | 'CHECK'
+  title: string
+  description: string
+}
+
+export interface VerificationTimelineStage {
+  stage_id: string
+  label: string
+  status: 'COMPLETED' | 'WARN' | 'FAILED' | 'SKIPPED'
+  duration_ms: number
+  details?: string
+}
+
 export interface VerifyResponse {
   verification_id?: number
   document_type: DocumentType
@@ -137,6 +192,11 @@ export interface VerifyResponse {
   face_status?: string
   document_quality?: Record<string, any>
   field_provenance?: Record<string, any>
+  document_authenticity?: DocumentAuthenticityResult | null
+  risk_breakdown?: RiskBreakdownItem[] | null
+  cross_field_consistency?: CrossFieldConsistencyResult | null
+  why_flagged?: WhyFlaggedItem[] | null
+  timeline?: VerificationTimelineStage[] | null
 }
 
 export type ScreenMode = 'intake' | 'verifying' | 'results'

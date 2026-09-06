@@ -15,6 +15,7 @@ interface DocumentIntakeProps {
   onFileSelect: (file: File) => void
   onClearDocument: () => void
   onProceedToNextStep: () => void
+  onRunStage1Only?: () => void
 }
 
 const DOCUMENT_TYPES: { type: DocumentType; label: string; sub: string }[] = [
@@ -33,6 +34,7 @@ export const DocumentIntake: React.FC<DocumentIntakeProps> = ({
   onFileSelect,
   onClearDocument,
   onProceedToNextStep,
+  onRunStage1Only,
 }) => {
   const [isDragOver, setIsDragOver] = useState(false)
   const [errorMessage, setErrorMessage] = useState<string | null>(null)
@@ -201,8 +203,22 @@ export const DocumentIntake: React.FC<DocumentIntakeProps> = ({
         </div>
       )}
 
-      {/* STEP 1 NEXT CTA */}
-      <div className="pt-2 flex justify-end">
+      {/* STEP 1 CTAS: Stage 1 Authenticity vs Step 2 Biometrics */}
+      <div className="pt-2 flex flex-col sm:flex-row items-center justify-between gap-3">
+        {onRunStage1Only && documentReady && selectedDocumentType !== 'VISA' && (
+          <Button
+            type="button"
+            variant="outline"
+            onClick={() => {
+              soundFX.paperSlide()
+              onRunStage1Only()
+            }}
+            className="border-[#0B2925]/30 text-[#0B2925] hover:bg-[#A7F3D0]/20 font-semibold text-xs"
+          >
+            Verify Stage 1: Document Authenticity Only
+          </Button>
+        )}
+        <div className="flex-1" />
         <Button
           onClick={() => {
             soundFX.paperSlide()
@@ -210,7 +226,7 @@ export const DocumentIntake: React.FC<DocumentIntakeProps> = ({
           }}
           disabled={!documentReady}
           size="lg"
-          className="gap-2 bg-[#0B2925] hover:bg-[#133D37] text-[#F8F5F3] font-bold cursor-pointer"
+          className="gap-2 bg-[#0B2925] hover:bg-[#133D37] text-[#F8F5F3] font-bold cursor-pointer w-full sm:w-auto"
         >
           <span>
             {selectedDocumentType === 'VISA'

@@ -332,6 +332,7 @@ function MainApp() {
                 onSelectDocumentType={setSelectedDocumentType}
                 onFileSelect={handleFileSelect}
                 onClearDocument={handleClearDocument}
+                onRunStage1Only={handleSubmitVerification}
                 onProceedToNextStep={() => {
                   if (selectedDocumentType === 'VISA') {
                     handleSubmitVerification()
@@ -360,6 +361,10 @@ function MainApp() {
                 selfiePreviewUrl={capturedSelfieUrl}
                 documentName={documentName}
                 onReset={handleReset}
+                onProceedToBiometrics={() => {
+                  setIntakeStep('step2')
+                  setLocation('/intake')
+                }}
               />
             ) : isVerifying ? (
               <VerificationProgress
