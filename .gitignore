@@ -1,0 +1,67 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+venv/
+ENV/
+.venv/
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+!frontend/src/lib/
+!frontend/src/lib/utils.ts
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# Testing & Caches
+.pytest_cache/
+.coverage
+htmlcov/
+.cache/
+
+# Databases & Runtime Uploads
+*.db
+*.sqlite
+*.sqlite3
+uploads/
+!uploads/.gitkeep
+audit_log.json
+
+# Temporary bundles
+*.zip
+sih26188-backend/
+sih_modules 2/
+
+# Frontend
+frontend/node_modules/
+frontend/dist/
+frontend/.vite/
+node_modules/
+dist/
+
+# Environment & IDE
+.env
+.env.local
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+cloudflared.exe
+tunnel_output.txt
+*.exe
+cookies.txt
+
+.venv312/

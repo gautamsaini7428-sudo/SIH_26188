@@ -1,0 +1,351 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Document Verification — Scan Animation</title>
+<style>
+  :root{
+    --bg: #0A1220;
+    --bg-2: #0F1B2E;
+    --card: #F7F8FA;
+    --ink: #101828;
+    --muted: #6B7688;
+    --line: #E3E6EB;
+    --accent: #2FD3C9;
+    --ok: #34D399;
+    --ok-bg: #DDF7EC;
+    --ok-text: #0E9F76;
+    --bad: #F04438;
+    --bad-bg: #FEE4E2;
+    --bad-text: #B42318;
+  }
+  *{box-sizing:border-box;}
+  html,body{
+    margin:0; padding:0; width:100%; height:100%;
+    background:
+      radial-gradient(circle at 30% 15%, var(--bg-2), var(--bg) 60%);
+    font-family: -apple-system, "Segoe UI", Inter, Helvetica, Arial, sans-serif;
+    display:flex; align-items:center; justify-content:center;
+    overflow:hidden;
+  }
+  .stage{
+    position:relative;
+    width: 420px;
+    max-width: 92vw;
+    padding: 46px 0 30px;
+  }
+  .stage-label{
+    text-align:center;
+    color:#7C8AA0;
+    font-size:13px;
+    letter-spacing:0.02em;
+    margin-bottom:6px;
+    min-height:16px;
+    transition: color .3s ease;
+  }
+  .stage-label.bad{ color: var(--bad-text); }
+  .stage-label.good{ color: var(--ok-text); }
+  .reason{
+    text-align:center;
+    color:var(--bad-text);
+    font-size:11.5px;
+    min-height:14px;
+    margin-bottom:12px;
+    opacity:0;
+    transition: opacity .3s ease;
+  }
+  .reason.show{ opacity:1; }
+
+  .card-wrap{ position:relative; perspective: 900px; }
+  .card{
+    position:relative;
+    background:var(--card);
+    border-radius:16px;
+    box-shadow: 0 30px 60px -20px rgba(0,0,0,0.55), 0 0 0 1px rgba(255,255,255,0.04);
+    padding:22px 22px 20px;
+    overflow:hidden;
+    animation: settle 6s ease-in-out infinite;
+  }
+  @keyframes settle{
+    0%{ transform: rotateX(6deg) rotateY(-4deg) scale(0.98); }
+    12%{ transform: rotateX(0deg) rotateY(0deg) scale(1); }
+    88%{ transform: rotateX(0deg) rotateY(0deg) scale(1); }
+    100%{ transform: rotateX(6deg) rotateY(-4deg) scale(0.98); }
+  }
+  .card-top{ display:flex; justify-content:space-between; align-items:center; margin-bottom:16px; }
+  .doc-title{ font-size:11px; color:var(--muted); letter-spacing:0.06em; }
+  .doc-id{ font-size:11px; color:#B7BECB; font-variant-numeric: tabular-nums; }
+  .body-row{ display:flex; gap:16px; }
+  .photo-box{
+    position:relative; width:84px; height:100px; border-radius:9px;
+    background: linear-gradient(160deg,#DEE3EA,#C8CFDA);
+    flex-shrink:0; overflow:hidden;
+  }
+  .photo-box svg{ position:absolute; inset:0; width:100%; height:100%; }
+  .fields{ flex:1; display:flex; flex-direction:column; justify-content:center; gap:12px; }
+  .field{ position:relative; }
+  .field .label{ font-size:9.5px; color:var(--muted); letter-spacing:0.05em; margin-bottom:4px; }
+  .field .value{
+    height:11px; border-radius:4px; background: var(--line);
+    position:relative; overflow:visible;
+    transition: box-shadow .3s ease;
+  }
+  .field .value .fill{
+    position:absolute; inset:0; border-radius:4px;
+    background: linear-gradient(90deg, #DADFE6, #ECEFF3);
+    transform: scaleX(0); transform-origin:left;
+    overflow:hidden;
+  }
+  .field .value .text{
+    position:relative; font-size:11px; line-height:11px; color:var(--ink);
+    font-weight:600; opacity:0; padding-left:1px;
+  }
+  .name-field .value{ width:82%; }
+  .dob-field .value{ width:52%; }
+  .idnum-field .value{ width:70%; }
+
+  .check{ position:absolute; right:-2px; top:50%; transform: translateY(-50%) scale(0); width:16px; height:16px; }
+  .check svg{ position:absolute; inset:0; width:100%; height:100%; }
+  .check .check-bad{ display:none; }
+
+  /* fail-state styling, toggled by JS via classes on .card */
+  .card.fail-name .name-field .value{ box-shadow: inset 0 0 0 1px var(--bad); }
+  .card.fail-name .name-field .check-ok{ display:none; }
+  .card.fail-name .name-field .check-bad{ display:block; }
+  .card.fail-name .name-field .text{ color: var(--bad-text); }
+
+  .card.fail-dob .dob-field .value{ box-shadow: inset 0 0 0 1px var(--bad); }
+  .card.fail-dob .dob-field .check-ok{ display:none; }
+  .card.fail-dob .dob-field .check-bad{ display:block; }
+  .card.fail-dob .dob-field .text{ color: var(--bad-text); }
+
+  .card.fail-idnum .idnum-field .value{ box-shadow: inset 0 0 0 1px var(--bad); }
+  .card.fail-idnum .idnum-field .check-ok{ display:none; }
+  .card.fail-idnum .idnum-field .check-bad{ display:block; }
+  .card.fail-idnum .idnum-field .text{ color: var(--bad-text); }
+
+  .bottom-strip{
+    margin-top:18px; padding-top:14px; border-top:1px dashed #DDE1E7;
+    display:flex; justify-content:space-between; align-items:center;
+  }
+  .barcode{ display:flex; gap:2px; align-items:flex-end; height:20px; }
+  .barcode span{ display:block; width:2px; background:#C7CCD4; }
+  .status-pill{
+    font-size:10.5px; font-weight:600; color:#9098A8; background:#EEF0F3;
+    border-radius:20px; padding:5px 10px 5px 8px; display:flex; align-items:center; gap:5px;
+    transition: color .3s ease, background .3s ease;
+  }
+  .status-pill .dot{ width:6px; height:6px; border-radius:50%; background:#B9C0CC; transition: background .3s ease; }
+  .status-pill.verified{ color: var(--ok-text); background: var(--ok-bg); }
+  .status-pill.verified .dot{ background: var(--ok-text); }
+  .status-pill.rejected{ color: var(--bad-text); background: var(--bad-bg); }
+  .status-pill.rejected .dot{ background: var(--bad-text); }
+
+  /* scan line */
+  .scan-line{
+    position:absolute; left:0; right:0; height:56px; top:-56px;
+    background: linear-gradient(to bottom,
+      rgba(47,211,201,0) 0%, rgba(47,211,201,0.06) 35%,
+      rgba(47,211,201,0.55) 92%, rgba(47,211,201,0.95) 100%);
+    animation: sweep 6s cubic-bezier(.65,0,.35,1) infinite;
+    pointer-events:none; mix-blend-mode: multiply;
+  }
+  .scan-line::after{
+    content:""; position:absolute; left:0; right:0; bottom:0; height:2px;
+    background: var(--accent);
+    box-shadow: 0 0 12px 2px var(--accent), 0 0 26px 6px rgba(47,211,201,0.5);
+  }
+  @keyframes sweep{
+    0%   { top:-56px; opacity:0; }
+    8%   { opacity:1; }
+    62%  { top:100%; opacity:1; }
+    70%  { opacity:0; top:100%; }
+    100% { opacity:0; top:-56px; }
+  }
+
+  .frame-corner{ position:absolute; width:18px; height:18px; border: 2px solid var(--accent); opacity:0.9; }
+  .fc-tl{ top:-8px; left:-8px; border-right:none; border-bottom:none; border-radius:6px 0 0 0;}
+  .fc-tr{ top:-8px; right:-8px; border-left:none; border-bottom:none; border-radius:0 6px 0 0;}
+  .fc-bl{ bottom:-8px; left:-8px; border-right:none; border-top:none; border-radius:0 0 0 6px;}
+  .fc-br{ bottom:-8px; right:-8px; border-left:none; border-top:none; border-radius:0 0 6px 0;}
+
+  .photo-box .scan-glow{
+    position:absolute; inset:0; background: var(--accent); opacity:0;
+    animation: photoGlow 6s ease infinite; mix-blend-mode: overlay;
+  }
+  @keyframes photoGlow{ 0%,18%{opacity:0;} 24%{opacity:0.55;} 30%,100%{opacity:0;} }
+
+  .name-field .fill{ animation: fillIn 6s ease infinite; animation-delay:0s; }
+  .name-field .text{ animation: textIn 6s ease infinite; animation-delay:0s; }
+  .name-field .check{ animation: checkIn 6s ease infinite; animation-delay:0s; }
+
+  .dob-field .fill{ animation: fillIn 6s ease infinite; animation-delay:.55s; }
+  .dob-field .text{ animation: textIn 6s ease infinite; animation-delay:.55s; }
+  .dob-field .check{ animation: checkIn 6s ease infinite; animation-delay:.55s; }
+
+  .idnum-field .fill{ animation: fillIn 6s ease infinite; animation-delay:1.1s; }
+  .idnum-field .text{ animation: textIn 6s ease infinite; animation-delay:1.1s; }
+  .idnum-field .check{ animation: checkIn 6s ease infinite; animation-delay:1.1s; }
+
+  @keyframes fillIn{ 0%,30%{ transform:scaleX(0); } 38%,100%{ transform:scaleX(1); } }
+  @keyframes textIn{ 0%,36%{ opacity:0; } 42%,100%{ opacity:1; } }
+  @keyframes checkIn{
+    0%,36%{ transform: translateY(-50%) scale(0); }
+    44%{ transform: translateY(-50%) scale(1.25); }
+    50%,100%{ transform: translateY(-50%) scale(1); }
+  }
+</style>
+</head>
+<body>
+
+<div class="stage">
+  <div class="stage-label" id="stageLabel">Scanning document…</div>
+  <div class="reason" id="reason"></div>
+  <div class="card-wrap">
+    <div class="card" id="card">
+      <div class="scan-line"></div>
+      <div class="frame-corner fc-tl"></div>
+      <div class="frame-corner fc-tr"></div>
+      <div class="frame-corner fc-bl"></div>
+      <div class="frame-corner fc-br"></div>
+
+      <div class="card-top">
+        <div class="doc-title">Identity Document</div>
+        <div class="doc-id">No. 04 7231 9958</div>
+      </div>
+
+      <div class="body-row">
+        <div class="photo-box">
+          <div class="scan-glow"></div>
+          <svg viewBox="0 0 84 100" fill="none">
+            <circle cx="42" cy="38" r="16" fill="#B9C1CE"/>
+            <path d="M12 96c4-20 20-32 30-32s26 12 30 32" fill="#B9C1CE"/>
+          </svg>
+        </div>
+
+        <div class="fields">
+          <div class="field name-field" data-label="Full name">
+            <div class="label">Full name</div>
+            <div class="value">
+              <div class="fill"></div>
+              <span class="text">Alex J. Whitfield</span>
+              <div class="check">
+                <svg class="check-ok" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="12" fill="#34D399"/><path d="M7 12.5l3 3 7-7.5" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                <svg class="check-bad" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="12" fill="#F04438"/><path d="M8.5 8.5l7 7M15.5 8.5l-7 7" stroke="white" stroke-width="2" stroke-linecap="round"/></svg>
+              </div>
+            </div>
+          </div>
+          <div class="field dob-field" data-label="Date of birth">
+            <div class="label">Date of birth</div>
+            <div class="value">
+              <div class="fill"></div>
+              <span class="text">14 Mar 1994</span>
+              <div class="check">
+                <svg class="check-ok" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="12" fill="#34D399"/><path d="M7 12.5l3 3 7-7.5" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                <svg class="check-bad" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="12" fill="#F04438"/><path d="M8.5 8.5l7 7M15.5 8.5l-7 7" stroke="white" stroke-width="2" stroke-linecap="round"/></svg>
+              </div>
+            </div>
+          </div>
+          <div class="field idnum-field" data-label="Document ID">
+            <div class="label">Document ID</div>
+            <div class="value">
+              <div class="fill"></div>
+              <span class="text">DOC-9924-771</span>
+              <div class="check">
+                <svg class="check-ok" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="12" fill="#34D399"/><path d="M7 12.5l3 3 7-7.5" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                <svg class="check-bad" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="12" fill="#F04438"/><path d="M8.5 8.5l7 7M15.5 8.5l-7 7" stroke="white" stroke-width="2" stroke-linecap="round"/></svg>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="bottom-strip">
+        <div class="barcode" id="barcode"></div>
+        <div class="status-pill" id="statusPill"><span class="dot"></span><span id="statusText">Reading…</span></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  // build a little barcode
+  const bc = document.getElementById('barcode');
+  for(let i=0;i<26;i++){
+    const b = document.createElement('span');
+    const h = 6 + Math.round(Math.random()*14);
+    b.style.height = h+'px';
+    bc.appendChild(b);
+  }
+
+  const stageLabel = document.getElementById('stageLabel');
+  const reasonEl = document.getElementById('reason');
+  const pill = document.getElementById('statusPill');
+  const statusText = document.getElementById('statusText');
+  const card = document.getElementById('card');
+
+  const FAIL_FIELDS = ['name','dob','idnum'];
+  const LOOP_MS = 6000;
+
+  let currentCycle = -1;
+  let outcome = 'verified';
+  let failField = null;
+
+  function applyOutcomeClasses(){
+    card.classList.remove('fail-name','fail-dob','fail-idnum');
+    if (outcome === 'rejected' && failField){
+      card.classList.add('fail-' + failField);
+    }
+  }
+
+  function fieldLabel(key){
+    const map = { name: 'Full name', dob: 'Date of birth', idnum: 'Document ID' };
+    return map[key];
+  }
+
+  function tick(){
+    const now = performance.now();
+    const cycle = Math.floor(now / LOOP_MS);
+    const t = (now % LOOP_MS) / LOOP_MS; // 0..1
+
+    // pick a fresh outcome right as each new loop begins
+    if (cycle !== currentCycle){
+      currentCycle = cycle;
+      outcome = (cycle % 2 === 0) ? 'verified' : 'rejected';
+      failField = outcome === 'rejected' ? FAIL_FIELDS[Math.floor(cycle / 2) % FAIL_FIELDS.length] : null;
+      applyOutcomeClasses();
+      reasonEl.classList.remove('show');
+      pill.classList.remove('verified','rejected');
+      stageLabel.classList.remove('good','bad');
+    }
+
+    if (t < 0.62) {
+      stageLabel.textContent = 'Scanning document…';
+      statusText.textContent = 'Reading…';
+    } else if (t < 0.7) {
+      stageLabel.textContent = 'Cross-checking fields…';
+      statusText.textContent = 'Reading…';
+    } else {
+      if (outcome === 'verified'){
+        stageLabel.textContent = 'Identity verified';
+        stageLabel.classList.add('good');
+        pill.classList.add('verified');
+        statusText.textContent = 'Verified';
+        reasonEl.classList.remove('show');
+      } else {
+        stageLabel.textContent = 'Verification failed';
+        stageLabel.classList.add('bad');
+        pill.classList.add('rejected');
+        statusText.textContent = 'Rejected';
+        reasonEl.textContent = 'Mismatch on ' + fieldLabel(failField).toLowerCase();
+        reasonEl.classList.add('show');
+      }
+    }
+
+    requestAnimationFrame(tick);
+  }
+  requestAnimationFrame(tick);
+</script>
+
+</body>
+</html>
