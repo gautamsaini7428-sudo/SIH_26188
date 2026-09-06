@@ -1,5 +1,7 @@
 @import "tailwindcss";
 
+@custom-variant dark (&:where(.dark, .dark *));
+
 @layer base {
   :root {
     --font-sans: 'DM Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
@@ -28,32 +30,73 @@
     --sidebar: #3C467B;
     --sidebar-foreground: #ffffff;
     --sidebar-accent: #50589C;
+    --auth-page: #eef1ff;
+    --auth-panel: #FFFFFF;
+    --auth-card: #F3F6FF;
+    --officer-chip-bg: #EAF0FF;
+    --officer-chip-text: #3C467B;
+    --supervisor-chip-bg: rgba(99, 108, 203, 0.14);
+    --supervisor-chip-text: #636CCB;
+    --brand-panel: #3C467B;
+    --brand-detail: #6E8CFB;
+    --brand-detail-soft: rgba(110, 140, 251, 0.14);
+    --page-heading: #3C467B;
+    --page-secondary: #50589C;
+    --home-bg: #eef1ff;
+    --home-panel: #ffffff;
+    --home-ink: #1e2550;
+    --home-muted: #50589C;
+    --home-surface: #F3F6FF;
+    --home-line: #dfe4ff;
   }
 
   .dark {
-    /* Dark Mode: deeper variant of the same indigo palette */
-    --background: #0f1634;
-    --foreground: #edf1ff;
-    --card: #171f46;
-    --card-foreground: #edf1ff;
-    --popover: #171f46;
-    --popover-foreground: #edf1ff;
-    --primary: #6E8CFB;
-    --primary-foreground: #0f1634;
-    --secondary: #212d5f;
-    --secondary-foreground: #edf1ff;
-    --muted: #1b274e;
-    --muted-foreground: #b9c7ff;
-    --accent: #636CCB;
-    --accent-foreground: #ffffff;
+    /* Dark Mode: dashboard palette from the supplied reference */
+    --background: #08102A;
+    --foreground: #DEF4F2;
+    --card: #111C30;
+    --card-foreground: #DEF4F2;
+    --popover: #111C30;
+    --popover-foreground: #DEF4F2;
+    --primary: #334FE0;
+    --primary-foreground: #ffffff;
+    --secondary: #0C162F;
+    --secondary-foreground: #DEF4F2;
+    --muted: #0C162F;
+    --muted-foreground: #AAB6C8;
+    --accent: #18D4B5;
+    --accent-foreground: #08102A;
     --destructive: #ff6b6b;
     --destructive-foreground: #ffffff;
-    --border: rgba(110, 140, 251, 0.3);
-    --input: rgba(110, 140, 251, 0.18);
-    --ring: rgba(110, 140, 251, 0.45);
-    --sidebar: #0b1229;
-    --sidebar-foreground: #edf1ff;
-    --sidebar-accent: #3C467B;
+    --border: #1C345C;
+    --input: #1C345C;
+    --ring: #334FE0;
+    --sidebar: #0C162F;
+    --sidebar-foreground: #DEF4F2;
+    --sidebar-accent: #334FE0;
+    --chart-1: #3D8FD8;
+    --chart-2: #38A9D0;
+    --chart-3: #20B9A7;
+    --chart-4: #8C9BE0;
+    --chart-5: #6AC7D4;
+    --auth-page: #08102A;
+    --auth-panel: #111C30;
+    --auth-card: #111C30;
+    --officer-chip-bg: rgba(61, 143, 216, 0.16);
+    --officer-chip-text: #6AC7D4;
+    --supervisor-chip-bg: rgba(32, 185, 167, 0.16);
+    --supervisor-chip-text: #20B9A7;
+    --brand-panel: #0C162F;
+    --brand-detail: #6AC7D4;
+    --brand-detail-soft: rgba(61, 143, 216, 0.16);
+    --page-heading: #DEF4F2;
+    --page-secondary: #AAB6C8;
+    --home-bg: #08102A;
+    --home-panel: #111C30;
+    --home-ink: #DEF4F2;
+    --home-muted: #AAB6C8;
+    --home-surface: #0C162F;
+    --home-line: #1C345C;
   }
 
   * {
@@ -70,6 +113,73 @@
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
     transition: background-color 0.25s ease, color 0.25s ease;
+  }
+
+  .light-home {
+    --home-bg: #eef1ff;
+    --home-panel: #ffffff;
+    --home-ink: #1e2550;
+    --home-muted: #50589C;
+    --home-surface: #F3F6FF;
+    --home-line: #dfe4ff;
+  }
+
+  .light-home nav,
+  .light-home section,
+  .light-home footer {
+    background-color: var(--home-bg) !important;
+    border-color: var(--home-line) !important;
+    color: var(--home-ink) !important;
+  }
+
+  .light-home nav {
+    background-color: rgba(60, 70, 123, 0.98) !important;
+    color: #ffffff !important;
+  }
+
+  .light-home h1,
+  .light-home h2,
+  .light-home h3,
+  .light-home h4,
+  .light-home h5 {
+    color: var(--home-ink) !important;
+  }
+
+  .light-home p {
+    color: var(--home-muted) !important;
+  }
+
+  .light-home [class*="bg-[#0B2925]"],
+  .light-home [class*="bg-[#061A17]"],
+  .light-home [class*="bg-[#0f1634]"],
+  .light-home [class*="bg-[#171f46]"] {
+    background-color: var(--home-panel) !important;
+    border-color: var(--home-line) !important;
+  }
+
+  .light-home [class*="text-[#F8F5F3]"],
+  .light-home [class*="text-[#DDE4FF]"],
+  .light-home [class*="text-[#A7F3D0]"] {
+    color: var(--home-ink) !important;
+  }
+
+  .light-home [class*="text-[#F8F5F3]/"] {
+    color: var(--home-muted) !important;
+  }
+
+  .light-home [class*="border-[#133D37]"],
+  .light-home [class*="border-[#2d3d7a]"] {
+    border-color: var(--home-line) !important;
+  }
+
+  .light-home [class*="bg-[#133D37]"] {
+    background-color: #EAF0FF !important;
+    color: #3C467B !important;
+  }
+
+  .light-home [class*="bg-[#6E8CFB]"] {
+    background-color: #6E8CFB !important;
+    color: #ffffff !important;
   }
 
   h1, h2, h3, h4, .font-editorial {

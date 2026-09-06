@@ -152,17 +152,17 @@ export const SupervisorConsole: React.FC = () => {
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <div className="flex items-center gap-2">
-            <h2 className="text-2xl sm:text-3xl font-bold text-[#27212B] tracking-tight font-editorial">
+            <h2 className="text-2xl sm:text-3xl font-bold text-[var(--page-heading)] tracking-tight font-editorial">
               Supervisor Review &amp; Audit Console
             </h2>
             {isLiveChainLoaded && (
-              <Badge variant="outline" className="text-[10px] bg-[#EAF0FF] text-[#3C467B] border-[#636CCB]/30">
+              <Badge variant="outline" className="text-[10px] bg-[#EAF0FF] dark:bg-[#1C345C] text-[#3C467B] dark:text-[#DEF4F2] border-[#636CCB]/30">
                 <LinkIcon className="w-3 h-3 mr-1 inline" />
                 Live SHA-256 Chain
               </Badge>
             )}
           </div>
-          <p className="text-xs sm:text-sm text-[#755B73]">
+          <p className="text-xs sm:text-sm text-[var(--page-secondary)]">
             Tamper-Evident SHA-256 Audit Trail • Real-time Border Identity Screening Analytics
           </p>
         </div>
@@ -171,7 +171,7 @@ export const SupervisorConsole: React.FC = () => {
           <Button
             onClick={handleVerifyChain}
             disabled={isVerifyingChain}
-            className="gap-2 bg-[#3C467B] hover:bg-[#50589C] text-[#F8F5F3] font-bold border border-[#6E8CFB]/40 shadow-xs cursor-pointer"
+            className="gap-2 bg-[#3C467B] dark:bg-[#334FE0] hover:bg-[#50589C] dark:hover:bg-[#3D8FD8] text-white font-bold border border-[#6E8CFB]/40 shadow-xs cursor-pointer"
           >
             {isVerifyingChain ? (
               <RefreshCw className="w-4 h-4 animate-spin" />
@@ -184,7 +184,7 @@ export const SupervisorConsole: React.FC = () => {
           <Button
             onClick={handleExport}
             variant="outline"
-            className="gap-2 border-[#DDE4FF] text-[#1E2550] hover:bg-[#F3F6FF] font-semibold cursor-pointer"
+            className="gap-2 border-[#DDE4FF] dark:border-[#1C345C] !text-[#3C467B] dark:!text-[#DEF4F2] hover:bg-[#F3F6FF] dark:hover:bg-[#111C30] font-semibold cursor-pointer"
           >
             <Download className="w-4 h-4" />
             <span>Export CSV</span>

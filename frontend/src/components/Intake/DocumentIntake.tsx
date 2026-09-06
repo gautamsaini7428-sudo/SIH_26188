@@ -14,6 +14,7 @@ interface DocumentIntakeProps {
   onSelectDocumentType: (docType: DocumentType) => void
   onFileSelect: (file: File) => void
   onClearDocument: () => void
+  onRunStage1Only?: () => void
   onProceedToNextStep: () => void
 }
 
@@ -86,20 +87,20 @@ export const DocumentIntake: React.FC<DocumentIntakeProps> = ({
   }
 
   return (
-    <div className="space-y-6">
+    <div className="max-w-5xl mx-auto space-y-5">
       {/* Page Header */}
       <div className="space-y-1">
-        <h2 className="text-2xl sm:text-3xl font-bold text-[#3C467B] tracking-tight font-editorial">
+        <h2 className="text-2xl sm:text-[28px] font-bold text-[var(--page-heading)] tracking-tight font-editorial">
           Step 1: Document Classification &amp; Specimen Deposit
         </h2>
-        <p className="text-xs sm:text-sm text-[#50589C]">
+        <p className="text-xs sm:text-sm text-[var(--page-secondary)]">
           Select the document category, then deposit the physical or scanned specimen into the border case file.
         </p>
       </div>
 
       {/* Clean Sentence-Case Section Heading */}
       <div className="space-y-2">
-        <label className="text-xs font-semibold text-[#3C467B] block">
+        <label className="text-xs font-semibold text-[var(--page-secondary)] block">
           Document Category
         </label>
         <Tabs
@@ -110,18 +111,18 @@ export const DocumentIntake: React.FC<DocumentIntakeProps> = ({
           }}
           className="w-full"
         >
-          <TabsList className="w-full grid grid-cols-2 sm:grid-cols-5 h-auto p-1.5 gap-1.5 bg-[#FFFFFF] border border-[#DDE4FF] rounded-xl shadow-xs">
+          <TabsList className="w-full grid grid-cols-2 sm:grid-cols-5 h-auto p-1.5 gap-1.5 bg-[#FFFFFF] dark:bg-[#111C30] border border-[#DDE4FF] dark:border-[#1C345C] rounded-xl shadow-xs">
             {DOCUMENT_TYPES.map((t) => (
               <TabsTrigger
                 key={t.type}
                 value={t.type}
-                className="flex-col items-start py-2.5 px-3 text-left text-[#50589C] bg-transparent data-[state=active]:bg-[#EAF0FF] data-[state=active]:text-[#3C467B] data-[state=active]:shadow-2xs transition-all rounded-lg"
+                className="flex-col items-start py-2.5 px-3 text-left text-[#50589C] dark:text-[#AAB6C8] bg-transparent hover:bg-[#F3F6FF] dark:hover:bg-[#1C345C] data-[state=active]:bg-[#EAF0FF] dark:data-[state=active]:bg-[#334FE0] data-[state=active]:text-[#3C467B] dark:data-[state=active]:text-white data-[state=active]:shadow-2xs transition-all rounded-lg"
               >
                 <div className="flex items-center justify-between w-full font-semibold text-xs">
                   <span>{t.label}</span>
-                  {selectedDocumentType === t.type && <FileCheck className="w-3.5 h-3.5 text-[#3C467B]" />}
+                  {selectedDocumentType === t.type && <FileCheck className="w-3.5 h-3.5 text-[#3C467B] dark:text-[#DEF4F2]" />}
                 </div>
-                <span className="text-[10px] text-[#50589C] mt-0.5 font-normal">{t.sub}</span>
+                <span className="text-[10px] text-[#50589C] dark:text-[#AAB6C8] mt-0.5 font-normal">{t.sub}</span>
               </TabsTrigger>
             ))}
           </TabsList>
@@ -135,28 +136,28 @@ export const DocumentIntake: React.FC<DocumentIntakeProps> = ({
           onDragLeave={handleDragLeave}
           onDrop={handleDrop}
           onClick={() => fileInputRef.current?.click()}
-          className={`cursor-pointer border-dashed p-8 sm:p-12 text-center transition-all bg-[#FFFFFF] border-[#DDE4FF] ${
-            isDragOver ? 'border-[#3C467B] bg-[#F3F6FF]' : 'hover:border-[#636CCB]/60 hover:bg-[#F3F6FF]'
+          className={`min-h-[210px] flex items-center justify-center cursor-pointer border-dashed p-8 sm:p-12 text-center transition-all bg-[#FFFFFF] dark:bg-[#111C30] border-[#DDE4FF] dark:border-[#1C345C] ${
+            isDragOver ? 'border-[#3C467B] dark:border-[#3D8FD8] bg-[#F3F6FF] dark:bg-[#0C162F]' : 'hover:border-[#636CCB]/60 dark:hover:border-[#3D8FD8] hover:bg-[#F3F6FF] dark:hover:bg-[#0C162F]'
           }`}
         >
           <div className="max-w-md mx-auto space-y-4">
-            <div className="w-12 h-12 mx-auto rounded-xl bg-[#EEF3FF] border border-[#DDE4FF] flex items-center justify-center text-[#3C467B] shadow-xs">
-              <Upload className="w-6 h-6 text-[#3C467B]" />
+            <div className="w-12 h-12 mx-auto rounded-xl bg-[#EEF3FF] dark:bg-[#1C345C] border border-[#DDE4FF] dark:border-[#3D8FD8] flex items-center justify-center text-[#3C467B] dark:text-[#6AC7D4] shadow-xs">
+              <Upload className="w-6 h-6 text-[#3C467B] dark:text-[#6AC7D4]" />
             </div>
 
             <div>
-              <h3 className="text-lg font-bold text-[#3C467B]">
+              <h3 className="text-lg font-bold text-[#3C467B] dark:text-[#DEF4F2]">
                 Deposit {selectedDocumentType.replace('_', ' ')} Specimen
               </h3>
-              <p className="text-xs text-[#50589C] mt-1">
+              <p className="text-xs text-[#50589C] dark:text-[#AAB6C8] mt-1">
                 Drag and drop a physical or scanned document file here, or{' '}
-                <span className="text-[#3C467B] font-semibold underline underline-offset-2">
+                <span className="text-[#3C467B] dark:text-[#6AC7D4] font-semibold underline underline-offset-2">
                   browse local archives
                 </span>
               </p>
             </div>
 
-            <div className="text-[11px] text-[#50589C] font-mono">
+            <div className="text-[11px] text-[#50589C] dark:text-[#AAB6C8] font-mono">
               Accepted archival formats: High-Resolution JPG, PNG, WEBP, or PDF
             </div>
           </div>
@@ -184,7 +185,7 @@ export const DocumentIntake: React.FC<DocumentIntakeProps> = ({
                   soundFX.paperSlide()
                   onClearDocument()
                 }}
-                className="gap-1 text-xs text-[#755B73] hover:text-[#DC2626]"
+                className="gap-1 text-xs text-[#755B73] dark:text-[#AAB6C8] hover:text-[#DC2626]"
               >
                 <Trash2 className="w-3.5 h-3.5" />
                 <span>Replace Specimen</span>
@@ -210,7 +211,7 @@ export const DocumentIntake: React.FC<DocumentIntakeProps> = ({
           }}
           disabled={!documentReady}
           size="lg"
-          className="gap-2 bg-[#3C467B] hover:bg-[#50589C] text-[#ffffff] font-bold cursor-pointer"
+          className="gap-2 bg-[#3C467B] dark:bg-[#334FE0] hover:bg-[#50589C] dark:hover:bg-[#3D8FD8] text-[#ffffff] font-bold cursor-pointer"
         >
           <span>
             {selectedDocumentType === 'VISA'

@@ -33,12 +33,12 @@ export const AlertsView: FC<AlertsViewProps> = ({
   return (
     <div className="max-w-5xl mx-auto px-4 sm:px-6 py-6 sm:py-10 space-y-6">
       {/* Header & Controls */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 pb-4 border-b border-[#E5DDD8]">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 pb-4 border-b border-[#E5DDD8] dark:border-[#1C345C]">
         <div>
-          <h2 className="font-editorial text-2xl sm:text-3xl font-bold text-[#27212B]">
+          <h2 className="font-editorial text-2xl sm:text-3xl font-bold text-[var(--page-heading)]">
             Security Alerts &amp; Flagged Queue
           </h2>
-          <p className="text-xs sm:text-sm text-[#755B73] font-sans mt-0.5">
+          <p className="text-xs sm:text-sm text-[var(--page-secondary)] font-sans mt-0.5">
             Real-time notifications for identity specimens with tampering, facial mismatch, category failure, or blacklist flags.
           </p>
         </div>
@@ -50,7 +50,7 @@ export const AlertsView: FC<AlertsViewProps> = ({
               onRefresh()
             }}
             variant="outline"
-            className="gap-2 border-[#E5DDD8] text-[#0B2925] hover:bg-[#F8F5F3] font-semibold cursor-pointer self-start sm:self-auto text-xs"
+            className="gap-2 border-[#DDE4FF] dark:border-[#1C345C] !text-[#3C467B] dark:!text-[#DEF4F2] hover:bg-[#F3F6FF] dark:hover:bg-[#111C30] font-semibold cursor-pointer self-start sm:self-auto text-xs"
           >
             <RefreshCw className="w-3.5 h-3.5" />
             <span>Refresh Feed</span>
@@ -60,7 +60,7 @@ export const AlertsView: FC<AlertsViewProps> = ({
 
       {/* Summary KPI Ribbon */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-        <Card className="rounded-xl p-4 bg-[#FFFFFF] border-[#E5DDD8] shadow-xs">
+        <Card className="rounded-xl p-4 bg-[#FFFFFF] dark:bg-[#111C30] border-[#E5DDD8] dark:border-[#1C345C] shadow-xs">
           <div className="flex items-center gap-2 text-[11px] text-[#8A2323] font-semibold">
             <ShieldAlert className="w-3.5 h-3.5 text-[#8A2323]" />
             <span>Critical Forgeries</span>
@@ -68,40 +68,40 @@ export const AlertsView: FC<AlertsViewProps> = ({
           <div className="text-2xl font-bold text-[#8A2323] mt-1 font-mono">
             {criticalCount}
           </div>
-          <div className="text-[10px] text-[#755B73] mt-0.5">Immediate void status</div>
+          <div className="text-[10px] text-[#755B73] dark:text-[#AAB6C8] mt-0.5">Immediate void status</div>
         </Card>
 
-        <Card className="rounded-xl p-4 bg-[#FFFFFF] border-[#E5DDD8] shadow-xs">
-          <div className="flex items-center gap-2 text-[11px] text-[#755B73] font-semibold">
-            <AlertTriangle className="w-3.5 h-3.5 text-[#755B73]" />
+        <Card className="rounded-xl p-4 bg-[#FFFFFF] dark:bg-[#111C30] border-[#E5DDD8] dark:border-[#1C345C] shadow-xs">
+          <div className="flex items-center gap-2 text-[11px] text-[#755B73] dark:text-[#8C9BE0] font-semibold">
+            <AlertTriangle className="w-3.5 h-3.5 text-[#755B73] dark:text-[#8C9BE0]" />
             <span>Suspicious Inquiries</span>
           </div>
-          <div className="text-2xl font-bold text-[#755B73] mt-1 font-mono">
+          <div className="text-2xl font-bold text-[#755B73] dark:text-[#8C9BE0] mt-1 font-mono">
             {highWarningCount}
           </div>
-          <div className="text-[10px] text-[#755B73] mt-0.5">Secondary screening queue</div>
+          <div className="text-[10px] text-[#755B73] dark:text-[#AAB6C8] mt-0.5">Secondary screening queue</div>
         </Card>
 
-        <Card className="rounded-xl p-4 bg-[#FFFFFF] border-[#E5DDD8] shadow-xs">
-          <div className="flex items-center gap-2 text-[11px] text-[#0B2925] font-semibold">
-            <Bell className="w-3.5 h-3.5 text-[#0B2925]" />
+        <Card className="rounded-xl p-4 bg-[#FFFFFF] dark:bg-[#111C30] border-[#E5DDD8] dark:border-[#1C345C] shadow-xs">
+          <div className="flex items-center gap-2 text-[11px] text-[#20B9A7] font-semibold">
+            <Bell className="w-3.5 h-3.5 text-[#20B9A7]" />
             <span>Pending Review</span>
           </div>
-          <div className="text-2xl font-bold text-[#0B2925] mt-1 font-mono">
+          <div className="text-2xl font-bold text-[#20B9A7] mt-1 font-mono">
             {unreviewedCount}
           </div>
-          <div className="text-[10px] text-[#755B73] mt-0.5">Awaiting supervisor action</div>
+          <div className="text-[10px] text-[#755B73] dark:text-[#AAB6C8] mt-0.5">Awaiting supervisor action</div>
         </Card>
 
-        <Card className="rounded-xl p-4 bg-[#FFFFFF] border-[#E5DDD8] shadow-xs">
-          <div className="flex items-center gap-2 text-[11px] text-[#0B2925] font-semibold">
-            <CheckCircle2 className="w-3.5 h-3.5 text-[#0B2925]" />
+        <Card className="rounded-xl p-4 bg-[#FFFFFF] dark:bg-[#111C30] border-[#E5DDD8] dark:border-[#1C345C] shadow-xs">
+          <div className="flex items-center gap-2 text-[11px] text-[#20B9A7] font-semibold">
+            <CheckCircle2 className="w-3.5 h-3.5 text-[#20B9A7]" />
             <span>Resolved Cases</span>
           </div>
-          <div className="text-2xl font-bold text-[#0B2925] mt-1 font-mono">
+          <div className="text-2xl font-bold text-[#20B9A7] mt-1 font-mono">
             {resolvedCount}
           </div>
-          <div className="text-[10px] text-[#755B73] mt-0.5">Supervisor disposition logged</div>
+          <div className="text-[10px] text-[#755B73] dark:text-[#AAB6C8] mt-0.5">Supervisor disposition logged</div>
         </Card>
       </div>
 

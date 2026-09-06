@@ -23,7 +23,7 @@ export const Header: React.FC<HeaderProps> = ({ currentUser, onLogout, unreadAle
   ]
 
   return (
-    <header className="w-full bg-[#3C467B] text-[#F8F5F3] border-b border-[#50589C] sticky top-0 z-40 shadow-sm">
+    <header className="w-full bg-[#3C467B] dark:bg-[#0C162F] text-white border-b border-[#50589C] dark:border-[#1C345C] sticky top-0 z-40 shadow-sm">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between">
         {/* Brand Badge */}
         <Link
@@ -31,26 +31,26 @@ export const Header: React.FC<HeaderProps> = ({ currentUser, onLogout, unreadAle
           onClick={() => soundFX.paperSlide()}
           className="flex items-center gap-3 group select-none cursor-pointer"
         >
-          <div className="w-9 h-9 rounded-xl bg-[#50589C] border border-[#6E8CFB]/40 flex items-center justify-center text-[#EAF0FF] group-hover:bg-[#6E8CFB] group-hover:text-[#ffffff] transition-all shadow-xs">
+          <div className="w-9 h-9 rounded-xl bg-[#50589C] dark:bg-[#1C345C] border border-[#6E8CFB]/40 flex items-center justify-center text-white group-hover:bg-[#6E8CFB] group-hover:text-white transition-all shadow-xs">
             <Shield className="w-5 h-5" />
           </div>
           <div>
             <div className="flex items-center gap-2">
-              <span className="font-bold text-base text-[#F8F5F3] tracking-tight">
+              <span className="font-bold text-base text-white tracking-tight">
                 Case Examination Registry
               </span>
               <span className="text-[10px] font-mono font-bold text-[#ffffff] bg-[#6E8CFB] px-1.5 py-0.5 rounded">
                 SIH26188
               </span>
             </div>
-            <p className="text-[10.5px] text-[#DDE6FF]/80 font-sans">
+            <p className="text-[10.5px] text-[#EAF0FF]/85 dark:text-[#AAB6C8] font-sans">
               AI Identity Screening System • MHA Border Control
             </p>
           </div>
         </Link>
 
         {/* Navigation Tabs */}
-        <nav className="hidden md:flex items-center space-x-1 bg-[#50589C]/70 p-1 rounded-xl border border-[#6E8CFB]/25">
+        <nav className="hidden md:flex items-center space-x-1 bg-[#50589C]/70 dark:bg-[#111C30] p-1 rounded-xl border border-[#6E8CFB]/25 dark:border-[#1C345C]">
           {navItems.map((item) => {
             const Icon = item.icon
             const isActive = location === item.href || (location === '/' && item.href === '/intake')
@@ -63,7 +63,7 @@ export const Header: React.FC<HeaderProps> = ({ currentUser, onLogout, unreadAle
                 className={`relative flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg text-xs font-semibold transition-all select-none cursor-pointer ${
                   isActive
                     ? 'bg-[#6E8CFB] text-[#ffffff] shadow-xs'
-                    : 'text-[#F8F5F3]/80 hover:text-[#FFFFFF] hover:bg-[#50589C]'
+                    : 'text-white/85 hover:text-white hover:bg-[#50589C] dark:hover:bg-[#1C345C]'
                 }`}
               >
                 <Icon className="w-3.5 h-3.5" />

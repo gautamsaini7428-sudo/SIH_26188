@@ -1,5 +1,6 @@
 import React from 'react'
 import { Link } from 'wouter'
+import { useTheme } from '../context/ThemeContext'
 import { ScanVerify } from '../components/ScanVerify/ScanVerify'
 import {
   Shield,
@@ -23,9 +24,10 @@ import {
 } from 'lucide-react'
 
 export const HomePage: React.FC = () => {
+  const { theme } = useTheme()
 
   return (
-    <div className="min-h-screen bg-[#0f1634] text-[#F8F5F3] selection:bg-[#DDE4FF] selection:text-[#3C467B] font-sans">
+    <div className={`home-page ${theme === 'light' ? 'light-home' : 'dark-home'} min-h-screen bg-[var(--home-bg)] text-[var(--home-ink)] selection:bg-[#6E8CFB] selection:text-white font-sans`}>
       {/* ========================================================================= */}
       {/* 1. PUBLIC NAVBAR                                                          */}
       {/* ========================================================================= */}

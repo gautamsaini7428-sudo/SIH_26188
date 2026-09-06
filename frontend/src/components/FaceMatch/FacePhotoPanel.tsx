@@ -99,7 +99,7 @@ export const FacePhotoPanel: FC<FacePhotoPanelProps> = ({
   <circle cx="150" cy="140" r="65" fill="#BDB0A6"/>
   <ellipse cx="150" cy="300" rx="100" ry="75" fill="#BDB0A6"/>
   <path d="M 120 135 Q 135 125 150 135 Q 165 125 180 135" stroke="#7A7068" stroke-width="3" fill="none"/>
-  <text x="150" y="340" fill="#0B2925" font-family="'Newsreader', Georgia, serif" font-size="12" font-weight="600" text-anchor="middle">LIVE BIOMETRIC FEED</text>
+  <text x="150" y="340" fill="#0B2925" font-family="Georgia, serif" font-size="12" font-weight="600" text-anchor="middle">LIVE BIOMETRIC FEED</text>
 </svg>`)}`
     if (onPhotoCaptured) onPhotoCaptured(sampleSVG)
   }
@@ -119,17 +119,17 @@ export const FacePhotoPanel: FC<FacePhotoPanelProps> = ({
   }
 
   return (
-    <div className="dossier-sheet rounded-lg p-4 sm:p-5 flex flex-col justify-between h-full space-y-3">
+    <div className="dossier-sheet rounded-lg p-4 sm:p-5 flex flex-col justify-between h-full space-y-3 dark:bg-[#111C30] dark:border-[#1C345C]">
       {/* Header */}
-      <div className="flex items-center justify-between pb-2.5 border-b border-[#E3DCD6]">
+      <div className="flex items-center justify-between pb-2.5 border-b border-[#E3DCD6] dark:border-[#1C345C]">
         <div>
-          <h4 className="font-editorial text-sm sm:text-base font-bold text-[#0B2925]">
+          <h4 className="font-editorial text-sm sm:text-base font-bold text-[#0B2925] dark:text-[#DEF4F2]">
             {title}
           </h4>
-          <p className="text-[11px] text-[#6E6571] font-sans">{subtitle}</p>
+          <p className="text-[11px] text-[#6E6571] dark:text-[#AAB6C8] font-sans">{subtitle}</p>
         </div>
         {photoUrl && (
-          <span className="text-[10px] font-mono font-semibold px-2 py-0.5 rounded bg-[#A7F3D0]/30 text-[#0B2925] border border-[#0B2925]/20 flex items-center gap-1">
+          <span className="text-[10px] font-mono font-semibold px-2 py-0.5 rounded bg-[#A7F3D0]/30 dark:bg-[#20B9A7]/20 text-[#0B2925] dark:text-[#DEF4F2] border border-[#0B2925]/20 dark:border-[#20B9A7]/40 flex items-center gap-1">
             <Check className="w-2.5 h-2.5 stroke-[3]" />
             Acquired
           </span>
@@ -137,7 +137,7 @@ export const FacePhotoPanel: FC<FacePhotoPanelProps> = ({
       </div>
 
       {/* Main Viewport */}
-      <div className="relative aspect-[4/3] w-full rounded border border-[#E3DCD6] bg-[#FCFAF8] overflow-hidden flex items-center justify-center">
+      <div className="relative aspect-[4/3] w-full rounded border border-[#E3DCD6] dark:border-[#1C345C] bg-[#FCFAF8] dark:bg-[#0C162F] overflow-hidden flex items-center justify-center">
         {photoUrl ? (
           <img
             src={photoUrl}
@@ -162,15 +162,15 @@ export const FacePhotoPanel: FC<FacePhotoPanelProps> = ({
             )}
             {!isCameraActive && (
               <div className="text-center p-4 space-y-2">
-                <div className="w-10 h-10 mx-auto rounded bg-[#F2ECE9] border border-[#E3DCD6] flex items-center justify-center text-[#0B2925]">
+                <div className="w-10 h-10 mx-auto rounded bg-[#F2ECE9] dark:bg-[#1C345C] border border-[#E3DCD6] dark:border-[#1C345C] flex items-center justify-center text-[#0B2925] dark:text-[#6AC7D4]">
                   <Camera className="w-4 h-4" />
                 </div>
-                <div className="text-xs text-[#6E6571] font-sans">
+                <div className="text-xs text-[#6E6571] dark:text-[#AAB6C8] font-sans">
                   {cameraError || 'Webcam Standby'}
                 </div>
                 <button
                   onClick={handleCapture}
-                  className="px-3 py-1 rounded border border-[#0B2925] bg-[#FFFFFF] text-[11px] font-sans text-[#0B2925] hover:bg-[#F2ECE9]"
+                  className="px-3 py-1 rounded border border-[#0B2925] dark:border-[#3D8FD8] bg-[#FFFFFF] dark:bg-[#334FE0] text-[11px] font-sans text-[#0B2925] dark:text-white hover:bg-[#F2ECE9] dark:hover:bg-[#3D8FD8]"
                 >
                   Use Sample Biometric Feed
                 </button>
@@ -180,15 +180,15 @@ export const FacePhotoPanel: FC<FacePhotoPanelProps> = ({
         ) : (
           <div
             onClick={() => fileInputRef.current?.click()}
-            className="text-center p-6 cursor-pointer hover:bg-[#F2ECE9]/50 transition-colors w-full h-full flex flex-col items-center justify-center space-y-2"
+            className="text-center p-6 cursor-pointer hover:bg-[#F2ECE9]/50 dark:hover:bg-[#1C345C] transition-colors w-full h-full flex flex-col items-center justify-center space-y-2"
           >
-            <div className="w-10 h-10 rounded bg-[#F2ECE9] border border-[#E3DCD6] flex items-center justify-center text-[#0B2925]">
+            <div className="w-10 h-10 rounded bg-[#F2ECE9] dark:bg-[#1C345C] border border-[#E3DCD6] dark:border-[#1C345C] flex items-center justify-center text-[#0B2925] dark:text-[#6AC7D4]">
               <Upload className="w-4 h-4" />
             </div>
-            <div className="text-xs font-sans text-[#27212B] font-medium">
+            <div className="text-xs font-sans text-[#27212B] dark:text-[#DEF4F2] font-medium">
               Upload ID Photo
             </div>
-            <div className="text-[11px] text-[#6E6571] font-sans">
+            <div className="text-[11px] text-[#6E6571] dark:text-[#AAB6C8] font-sans">
               Click to select photo image
             </div>
             <input

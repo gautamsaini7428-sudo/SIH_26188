@@ -31,6 +31,7 @@ interface ResultsViewProps {
   selfiePreviewUrl?: string | null
   documentName: string
   onReset: () => void
+  onProceedToBiometrics?: () => void
 }
 
 export const ResultsView: React.FC<ResultsViewProps> = ({

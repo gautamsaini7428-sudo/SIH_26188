@@ -86,12 +86,12 @@ export const FaceMatchView: FC<FaceMatchViewProps> = ({
   return (
     <div className="max-w-4xl mx-auto px-4 sm:px-6 py-6 sm:py-10 space-y-6">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 pb-4 border-b border-[#E5DDD8]">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 pb-4 border-b border-[#E5DDD8] dark:border-[#1C345C]">
         <div>
-          <h2 className="font-editorial text-2xl sm:text-3xl font-bold text-[#27212B]">
+          <h2 className="font-editorial text-2xl sm:text-3xl font-bold text-[var(--page-heading)]">
             Biometric Face Verification
           </h2>
-          <p className="text-xs sm:text-sm text-[#755B73] font-sans mt-0.5">
+          <p className="text-xs sm:text-sm text-[var(--page-secondary)] font-sans mt-0.5">
             Compare facial landmarks between primary identification portrait and live webcam capture.
           </p>
         </div>
@@ -138,15 +138,15 @@ export const FaceMatchView: FC<FaceMatchViewProps> = ({
       </div>
 
       {/* Action / Results Zone */}
-      <Card className="rounded-2xl p-6 text-center space-y-4 border-[#E5DDD8] bg-[#FFFFFF]">
+      <Card className="rounded-2xl p-6 text-center space-y-4 border-[#E5DDD8] dark:border-[#1C345C] bg-[#FFFFFF] dark:bg-[#111C30]">
         {matchScore === null && !isScanning && (
           <div className="space-y-3 max-w-md mx-auto">
-            <p className="text-xs text-[#755B73]">
+            <p className="text-xs text-[var(--page-secondary)]">
               Ensure both exhibits are acquired, then run the 128-dimensional facial embedding comparison.
             </p>
             <Button
               onClick={handleRunMatch}
-              className="gap-2 bg-[#0B2925] hover:bg-[#133D37] text-[#F8F5F3] font-bold cursor-pointer"
+              className="gap-2 bg-[#0B2925] hover:bg-[#133D37] dark:bg-[#334FE0] dark:hover:bg-[#3D8FD8] text-[#F8F5F3] dark:text-white font-bold cursor-pointer"
             >
               <Play className="w-4 h-4 fill-current" />
               <span>Run Biometric Comparison</span>
@@ -156,10 +156,10 @@ export const FaceMatchView: FC<FaceMatchViewProps> = ({
 
         {isScanning && (
           <div className="space-y-2 py-4">
-            <div className="text-sm font-bold text-[#0B2925]">
+            <div className="text-sm font-bold text-[var(--page-heading)]">
               Extracting ArcFace-R100 Embeddings…
             </div>
-            <p className="text-xs text-[#755B73]">
+            <p className="text-xs text-[var(--page-secondary)]">
               Calculating cosine similarity distance across facial landmark vectors
             </p>
           </div>
