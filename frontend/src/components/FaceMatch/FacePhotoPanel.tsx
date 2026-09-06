@@ -230,7 +230,7 @@ export const FacePhotoPanel: FC<FacePhotoPanelProps> = ({
             isCameraActive && (
               <button
                 onClick={handleCapture}
-                className="w-full flex items-center justify-center gap-1.5 py-1.5 rounded bg-[#0B2925] text-[#FFFFFF] text-xs font-sans font-medium hover:bg-[#16433C] transition-colors shadow-xs"
+                className="w-full flex items-center justify-center gap-1.5 py-1.5 rounded bg-[#3C467B] hover:bg-[#50589C] dark:bg-[#0B2925] dark:hover:bg-[#16433C] text-white text-xs font-sans font-medium transition-colors shadow-xs"
               >
                 <Camera className="w-3.5 h-3.5" />
                 <span>Capture Live Frame</span>

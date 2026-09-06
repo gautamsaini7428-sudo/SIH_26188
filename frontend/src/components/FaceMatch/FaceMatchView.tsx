@@ -146,7 +146,7 @@ export const FaceMatchView: FC<FaceMatchViewProps> = ({
             </p>
             <Button
               onClick={handleRunMatch}
-              className="gap-2 bg-[#0B2925] hover:bg-[#133D37] dark:bg-[#334FE0] dark:hover:bg-[#3D8FD8] text-[#F8F5F3] dark:text-white font-bold cursor-pointer"
+              className="gap-2 bg-[#3C467B] hover:bg-[#50589C] dark:bg-[#334FE0] dark:hover:bg-[#3D8FD8] text-white font-bold cursor-pointer"
             >
               <Play className="w-4 h-4 fill-current" />
               <span>Run Biometric Comparison</span>
